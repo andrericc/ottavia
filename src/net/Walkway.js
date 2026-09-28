@@ -30,7 +30,11 @@ export class Walkway {
     this.byRow = new Map();
     for (let j = 0; j < net.rows; j++) {
       if (missing.includes(j)) continue;
-      const plank = { row: j, i0: fromCol, i1: toCol, broken: false };
+      const plank = {
+        row: j, i0: fromCol, i1: toCol, broken: false,
+        top: new THREE.Vector3(),          // un punto della faccia superiore (aggiornato ogni frame)
+        normal: new THREE.Vector3(0, 1, 0), // normale dell'asse
+      };
       this.planks.push(plank);
       this.byRow.set(j, plank);
     }
@@ -83,13 +87,54 @@ export class Walkway {
       Y.crossVectors(f, X).normalize();   // asse Y: perpendicolare alla rete, verso l'alto
       Z.crossVectors(X, Y);
 
+      // L'asse è la corda tra i due nodi estremi. Se qualche nodo intermedio della
+      // fila sta più in alto della corda, alzo l'asse: deve sempre poggiare SOPRA le funi.
+      let lift = 0;
+      for (let i = p.i0 + 1; i < p.i1; i++) {
+        const t = (i - p.i0) / (p.i1 - p.i0);
+        const chordY = a.y + (b.y - a.y) * t;
+        const nodeY = net.pos[net.index(i, p.row) * 3 + 1];
+        lift = Math.max(lift, nodeY - chordY);
+      }
+
       m.makeBasis(X, Y, Z);
       m.scale(this._s.set(len + this.overhang * 2, 1, 1));
       a.add(b).multiplyScalar(0.5).addScaledVector(Y, this.thickness / 2 + 0.02);
+      a.y += lift;
       m.setPosition(a);
       this.object.setMatrixAt(k, m);
+
+      // memorizzo il piano della faccia superiore: serve per appoggiarci i piedi
+      p.normal.copy(Y);
+      p.top.copy(a).addScaledVector(Y, this.thickness / 2);
     });
     this.object.instanceMatrix.needsUpdate = true;
+  }
+
+  // Altezza della faccia superiore dell'asse nel punto (x, z).
+  // È l'equazione del piano: n · (P - T) = 0  →  y = T.y - (nx·(x-Tx) + nz·(z-Tz)) / ny
+  plankTopAt(p, x, z) {
+    const n = p.normal, t = p.top;
+    return t.y - (n.x * (x - t.x) + n.z * (z - t.z)) / n.y;
+  }
+
+  // Il peso su un'asse rigida si distribuisce su tutti i nodi della fila su cui
+  // appoggia, di più su quelli vicini ai piedi: così l'asse si abbassa tutta
+  // insieme e si inclina un po' verso il lato su cui stai.
+  applyLoad(p, x, force) {
+    const net = this.net, s = net.spacing;
+    const xa = net.x0 + p.i0 * s, xb = net.x0 + p.i1 * s;
+    const t = THREE.MathUtils.clamp((x - xa) / (xb - xa), 0, 1);
+    const n = p.i1 - p.i0;
+    let total = 0;
+    const w = [];
+    for (let i = 0; i <= n; i++) {
+      w[i] = Math.max(0.2, 1 - Math.abs(i / n - t) * 1.5);
+      total += w[i];
+    }
+    for (let i = 0; i <= n; i++) {
+      net.acc[net.index(p.i0 + i, p.row) * 3 + 1] -= force * w[i] / total;
+    }
   }
 
   // Posizione Z reale (non a riposo) del centro di una traversina
@@ -106,7 +151,13 @@ export class Walkway {
   }
 
   // Il piede in (x, z) poggia su una traversina? Restituisce la traversina o null.
-  plankUnder(x, z) {
+  // 'current' è l'asse su cui si trova già: le diamo un po' di margine in più
+  // (isteresi), così non si "perde" l'asse per pochi centimetri mentre oscilla.
+  plankUnder(x, z, current = null) {
+    if (current && !current.broken) {
+      const [xa, xb] = this.plankXRange(current);
+      if (x >= xa && x <= xb && Math.abs(z - this.plankZ(current)) <= this.depth / 2 + 0.12) return current;
+    }
     const j = Math.round((z - this.net.z0) / this.net.spacing);
     for (let r = j - 1; r <= j + 1; r++) {
       const p = this.byRow.get(r);

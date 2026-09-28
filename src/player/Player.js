@@ -43,6 +43,8 @@ export class Player {
     this.grip = 1;            // presa rimasta (1 = piena, 0 = si cade)
     this.hands = new THREE.Vector3();   // dove sono aggrappate le mani (quando appeso)
     this.climb = null;        // dati dell'animazione di risalita
+    this.plank = null;        // traversina su cui poggiano i piedi (se c'è)
+    this.plankZPrev = null;
     this.impact = 0;          // colpo extra sulla rete (atterraggi, scivolate)
     this.canClimb = false;
     this.time = 0;
@@ -141,11 +143,14 @@ export class Player {
     // Su cosa poggio? roccia della cresta, traversina, o solo funi (intervallo)
     const crest = this.world.groundHeightAt(p.x, p.z);
     const netH = crest === null ? this.net.heightAt(p.x, p.z) : null;
-    const plank = netH !== null ? this.walkway.plankUnder(p.x, p.z) : null;
+    const plank = netH !== null ? this.walkway.plankUnder(p.x, p.z, this.plank) : null;
     let surf = null;
     if (crest !== null) surf = crest;
-    else if (netH !== null) surf = netH + (plank ? this.walkway.topOffset : 0);
+    else if (plank) surf = this.walkway.plankTopAt(plank, p.x, p.z); // piedi sul piano dell'asse
+    else if (netH !== null) surf = netH;                             // piedi sulle funi
 
+    if (plank !== this.plank) this.plankZPrev = plank ? this.walkway.plankZ(plank) : null;
+    this.plank = plank;
     const wasOnGround = this.onGround;
     const snap = wasOnGround ? 0.4 : 0.05;
     this.onGround = false;
@@ -231,7 +236,7 @@ export class Player {
 
     // la destinazione si muove con la rete, quindi la ricalcolo ogni frame
     const tx = c.target.x, tz = c.target.z;
-    const ty = c.target.crest ? 0 : this.net.heightAt(tx, tz) + this.walkway.topOffset;
+    const ty = c.target.crest ? 0 : this.walkway.plankTopAt(c.target.plank, tx, tz);
 
     // prima sale in verticale, poi si sposta sopra la traversina
     const up = Math.min(1, e * 1.6);
@@ -274,6 +279,31 @@ export class Player {
   }
 
   // ---------------------------------------------------------------
+  // Dopo la fisica: la rete si è mossa, quindi rimetto i piedi (o le mani)
+  // esattamente dove devono stare. Così non c'è un frame di ritardo.
+  // ---------------------------------------------------------------
+  postPhysics() {
+    const p = this.position;
+    if (this.state === 'walk' && this.onGround) {
+      if (this.world.groundHeightAt(p.x, p.z) !== null) return;
+      if (this.plank) {
+        // l'asse mi trascina con sé (attrito): seguo il suo spostamento in Z
+        const z = this.walkway.plankZ(this.plank);
+        if (this.plankZPrev !== null) p.z += z - this.plankZPrev;
+        this.plankZPrev = z;
+        p.y = this.walkway.plankTopAt(this.plank, p.x, p.z);
+      } else {
+        const h = this.net.heightAt(p.x, p.z);
+        if (h !== null) p.y = h;
+      }
+    } else if (this.state === 'hang') {
+      const h = this.net.heightAt(this.hands.x, this.hands.z);
+      if (h !== null) { this.hands.y = h; p.y = h - ARM_REACH; }
+    } else return;
+    this.object.position.copy(p);
+  }
+
+  // ---------------------------------------------------------------
   // Il peso sulla rete (chiamato a ogni passo della fisica)
   // ---------------------------------------------------------------
   applyToNet() {
@@ -282,6 +312,11 @@ export class Player {
       if (!this.onGround) return;
       x = this.position.x; z = this.position.z;
       if (this.world.groundHeightAt(x, z) !== null) return; // sono sulla roccia
+      if (this.plank) {                                      // sono su un'asse
+        this.walkway.applyLoad(this.plank, x, this.weight + this.impact);
+        this.impact = 0;
+        return;
+      }
     } else if (this.state === 'hang' || this.state === 'climb') {
       x = this.hands.x; z = this.hands.z;
     } else return;

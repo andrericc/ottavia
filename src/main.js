@@ -78,6 +78,7 @@ function frame(now) {
 
   netMesh.update();
   walkway.update();
+  player.postPhysics();
   followCam.update(dt, player.position);
   tensionEl.textContent = Math.round(netMesh.tension * 100) + '%';
   const hint = player.hint;
