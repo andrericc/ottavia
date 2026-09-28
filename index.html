@@ -14,6 +14,13 @@
         pointer-events: none;
       }
       #hud b { color: #fff; }
+      #hint {
+        position: fixed; left: 50%; top: 24px; transform: translateX(-50%);
+        font: 15px/1.5 system-ui, sans-serif; color: #fff; text-align: center;
+        background: rgba(0,0,0,.45); padding: 8px 16px; border-radius: 6px;
+        pointer-events: none; display: none; font-variant-numeric: tabular-nums;
+      }
+      #hint b { color: #ffd98a; }
     </style>
   </head>
   <body>
@@ -21,6 +28,7 @@
       <b>WASD</b> muovi · <b>Spazio</b> salta · <b>Mouse</b> (tieni premuto) ruota camera · <b>Rotella</b> zoom<br />
       Tensione rete: <span id="tension">0%</span>
     </div>
+    <div id="hint"></div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
