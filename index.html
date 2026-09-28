@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ottavia — Le città invisibili</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #0e1116; }
+      canvas { display: block; }
+      #hud {
+        position: fixed; left: 16px; bottom: 16px;
+        font: 13px/1.5 system-ui, sans-serif; color: #cfd6df;
+        background: rgba(0,0,0,.35); padding: 8px 12px; border-radius: 6px;
+        pointer-events: none;
+      }
+      #hud b { color: #fff; }
+    </style>
+  </head>
+  <body>
+    <div id="hud">
+      <b>WASD</b> muovi · <b>Spazio</b> salta · <b>Mouse</b> (tieni premuto) ruota camera · <b>Rotella</b> zoom<br />
+      Tensione rete: <span id="tension">0%</span>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
