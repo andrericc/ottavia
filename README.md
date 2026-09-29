@@ -40,6 +40,12 @@ src/
 │   ├── Traveler.js       il viaggiatore: modello gerarchico (22 articolazioni)
 │   ├── TravelerAnimator.js  animazione procedurale di ogni stato
 │   └── FollowCamera.js   camera in terza persona (con scossone)
+├── hanging/              tutto ciò che sta appeso sotto la rete
+│   ├── VerletBody.js     corpo morbido generico: particelle + funi/aste (Verlet)
+│   ├── HangingSystem.js  gestisce gli oggetti: pesi sulla rete, fisica, disegno delle funi
+│   ├── items.js          gli oggetti: lampadario, otre, cesto, vaso, amaca, trapezio…
+│   ├── layout.js         DOVE sta ogni oggetto (da modificare liberamente)
+│   └── textures.js       texture procedurali (tela a righe, sacco rattoppato)
 └── world/
     ├── World.js          creste, burrone, luci, nebbia
     └── Debris.js         oggetti che precipitano (traversine cadute)
@@ -105,3 +111,29 @@ Dettagli tecnici:
   - la lanterna è un pendolo sferico calcolato nello spazio del mondo.
 - **Luce gerarchica.** La lanterna contiene una `PointLight` figlia: la luce segue ogni
   movimento della catena gerarchica.
+
+## Gli oggetti appesi (step 6)
+
+*"Tutto il resto, invece d'elevarsi sopra, sta appeso sotto."*
+
+21 oggetti appesi sotto la rete (la loro posizione è in `layout.js`):
+3 case a sacco, 3 lampadari, 5 otri, 2 cesti, 3 vasi con piante pendule, 2 amache,
+un trapezio, gli anelli e una scala di corda.
+
+- **Nessuna animazione scritta a mano per le oscillazioni.** Ogni oggetto è appeso ai nodi
+  della rete con funi simulate (`VerletBody`, lo stesso metodo della rete). Quando la rete si
+  muove, per esempio quando il viaggiatore cammina o salta, tutto dondola da solo.
+- **Accoppiamento a due vie.** Il peso di ogni oggetto tira giù i nodi a cui è legato, e
+  rete e oggetti si assestano insieme all'avvio.
+- **Funi e aste.** Le funi resistono solo alla trazione. Pioli della scala e sbarra del
+  trapezio sono aste rigide (`rigid: true`).
+- **Modelli gerarchici.** Esempio: lampadario → anello (ruota) → 6 bracci → candela →
+  fiamma (tremola). C'è anche una `PointLight` vera.
+- **Movimento secondario a cascata.** Le fronde delle piante sono piccole funi legate al
+  bordo del vaso, che a sua volta dondola appeso alla rete. L'acqua negli otri è una molla
+  smorzata che li allunga e li schiaccia.
+- **Geometria dinamica.** Il telo dell'amaca è una striscia di triangoli ricalcolata a ogni
+  frame dalle particelle.
+- **Texture procedurali** disegnate con il Canvas 2D: tela a righe e sacco rattoppato.
+- **Prestazioni.** Tutte le funi sono una sola `LineSegments`, e le foglie e i pioli sono
+  `InstancedMesh`. La fisica di 300 particelle costa meno di 0,1 ms per passo.

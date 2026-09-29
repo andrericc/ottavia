@@ -12,6 +12,8 @@ import { NetMesh } from './net/NetMesh.js';
 import { Walkway } from './net/Walkway.js';
 import { buildWorld } from './world/World.js';
 import { Debris } from './world/Debris.js';
+import { HangingSystem } from './hanging/HangingSystem.js';
+import { populateOttavia } from './hanging/layout.js';
 import { Player } from './player/Player.js';
 import { FollowCamera } from './player/FollowCamera.js';
 
@@ -50,6 +52,14 @@ scene.add(netMesh.object);
 const walkway = new Walkway(net, { fromCol: 10, toCol: 14, missing: [9, 17, 27], worn: [21, 22, 23, 24] });
 scene.add(walkway.object);
 
+// --- Tutto ciò che sta appeso sotto la rete (lampadari, otri, case a sacco…)
+const hanging = new HangingSystem(scene, net);
+populateOttavia(hanging, net);
+// rete e oggetti si assestano insieme (il peso degli oggetti abbassa un po' la rete)
+for (let i = 0; i < 480; i++) { hanging.applyLoads(); net.step(1 / 120); hanging.step(1 / 120); }
+net.saveState();
+hanging.save();
+
 // --- Mondo, viaggiatore, camera
 const world = buildWorld(scene, { netLength, netWidth });
 const START = new THREE.Vector3(0, 0, -3);
@@ -64,6 +74,7 @@ addEventListener('keydown', (e) => {
   net.restoreState();
   walkway.reset();
   debris.clear();
+  hanging.reset();
   player.reset(START);
 });
 
@@ -80,7 +91,7 @@ function handleNetEvents() {
 }
 
 // Utile per il debug: nella console del browser puoi scrivere ottavia.player.state
-window.ottavia = { net, player, walkway, debris, followCam };
+window.ottavia = { net, player, walkway, debris, followCam, hanging };
 
 // --- HUD
 const tensionEl = document.getElementById('tension');
@@ -101,7 +112,9 @@ function frame(now) {
   accumulator += dt;
   while (accumulator >= FIXED_DT) {
     player.applyToNet();
+    hanging.applyLoads();
     net.step(FIXED_DT);
+    hanging.step(FIXED_DT);
     accumulator -= FIXED_DT;
   }
 
@@ -109,6 +122,7 @@ function frame(now) {
   netMesh.update(now / 1000);
   walkway.update();
   debris.update(dt);
+  hanging.update(dt, now / 1000);
   player.postPhysics();
   followCam.update(dt, player.position);
   tensionEl.textContent = Math.round(netMesh.tension * 100) + '%';
