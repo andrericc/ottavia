@@ -15,6 +15,12 @@ import { Debris } from './world/Debris.js';
 import { HangingSystem } from './hanging/HangingSystem.js';
 import { populateOttavia } from './hanging/layout.js';
 import { Player } from './player/Player.js';
+import { NotePost } from './world/NotePost.js';
+import { Narrator } from './ui/Narrator.js';
+import { Journal } from './ui/Journal.js';
+import { InteractionManager } from './interaction/InteractionManager.js';
+import { Story } from './story/Story.js';
+import './ui/style.css';
 import { FollowCamera } from './player/FollowCamera.js';
 
 // --- Renderer, scena, camera
@@ -68,6 +74,17 @@ scene.add(player.object);
 const followCam = new FollowCamera(camera, renderer.domElement);
 const debris = new Debris(scene);
 
+// --- Narrazione e interazione
+const notePost = new NotePost(new THREE.Vector3(1.7, 0, -1.4), Math.PI + 0.5);
+scene.add(notePost.object);
+const narrator = new Narrator();
+const journal = new Journal(narrator);
+const interactions = new InteractionManager(scene, player, narrator);
+journal.onToggle = (open) => { interactions.blocked = open; player.frozen = open || interactions.running; };
+const story = new Story({ narrator, journal, interactions, player, hanging, debris, notePost });
+// apertura (aggiungi ?skip all'indirizzo per saltarla mentre sviluppate)
+if (!new URLSearchParams(location.search).has('skip')) story.intro();
+
 // R = ricomincia: rete integra, traversine al loro posto, viaggiatore sulla cresta
 addEventListener('keydown', (e) => {
   if (e.code !== 'KeyR') return;
@@ -76,6 +93,7 @@ addEventListener('keydown', (e) => {
   debris.clear();
   hanging.reset();
   player.reset(START);
+  story.reset();
 });
 
 // Quando una fune si spezza: scossone della camera e traversine che si staccano
@@ -91,11 +109,13 @@ function handleNetEvents() {
 }
 
 // Utile per il debug: nella console del browser puoi scrivere ottavia.player.state
-window.ottavia = { net, player, walkway, debris, followCam, hanging };
+window.ottavia = { net, player, walkway, debris, followCam, hanging, narrator, journal, interactions, story };
 
 // --- HUD
 const tensionEl = document.getElementById('tension');
 const hintEl = document.getElementById('hint');
+const hudEl = document.getElementById('hud');
+hudEl.style.transition = 'opacity .3s';
 let lastHint = '';
 
 // --- Ciclo principale
@@ -124,9 +144,13 @@ function frame(now) {
   debris.update(dt);
   hanging.update(dt, now / 1000);
   player.postPhysics();
+  notePost.update(dt);
+  interactions.update(dt);
+  story.update();
   followCam.update(dt, player.position);
   tensionEl.textContent = Math.round(netMesh.tension * 100) + '%';
-  const hint = player.hint;
+  hudEl.style.opacity = narrator.busy || journal.isOpen ? 0 : 1; // mentre si legge, l'HUD si fa da parte
+  const hint = narrator.busy ? '' : player.hint;
   if (hint !== lastHint) { hintEl.innerHTML = hint; hintEl.style.display = hint ? 'block' : 'none'; lastHint = hint; }
 
   renderer.render(scene, camera);

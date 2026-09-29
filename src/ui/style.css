@@ -1,0 +1,110 @@
+/* style.css — interfaccia narrativa di Ottavia */
+:root {
+  --paper: #efe6d2;
+  --ink: #2b241c;
+  --ink-soft: #6b5d4c;
+  --night: rgba(14, 12, 10, 0.78);
+  --gold: #e8c27a;
+  --serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+}
+
+/* --- Riquadro della narrazione, in basso ------------------------- */
+#dialogue {
+  position: fixed; left: 50%; bottom: 36px; transform: translate(-50%, 12px);
+  width: min(720px, calc(100vw - 32px));
+  background: var(--night); color: #f3ead8;
+  border: 1px solid rgba(232, 194, 122, 0.35); border-radius: 10px;
+  padding: 22px 28px 18px; box-sizing: border-box;
+  font: 21px/1.45 var(--serif);
+  opacity: 0; pointer-events: none;
+  transition: opacity .35s ease, transform .35s ease;
+}
+#dialogue.open { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+#dialogue .title {
+  font: 600 13px/1 system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 10px;
+}
+#dialogue .text { min-height: 3em; white-space: pre-wrap; }
+#dialogue .text em { color: #fff; }
+#dialogue .more {
+  position: absolute; right: 18px; bottom: 10px;
+  font: 12px system-ui, sans-serif; color: rgba(243, 234, 216, .6);
+  animation: breathe 1.4s ease-in-out infinite;
+}
+@keyframes breathe { 50% { opacity: .25; } }
+#dialogue .choices { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+#dialogue .choices button {
+  flex: 1 1 200px; font: 18px var(--serif); color: #f3ead8;
+  background: rgba(255, 255, 255, .06); border: 1px solid rgba(232, 194, 122, .35);
+  border-radius: 8px; padding: 10px 14px; cursor: pointer; text-align: left;
+}
+#dialogue .choices button.sel, #dialogue .choices button:hover {
+  background: rgba(232, 194, 122, .18); border-color: var(--gold);
+}
+#dialogue .choices kbd { font: 12px system-ui; opacity: .7; margin-right: 8px; }
+
+/* --- Cartello a tutto schermo (apertura, finale) ------------------ */
+#card {
+  position: fixed; inset: 0; background: #0b0a09; color: #ece3cf;
+  display: flex; align-items: center; justify-content: center; flex-direction: column;
+  padding: 16px; box-sizing: border-box; text-align: center;
+  font: 26px/1.5 var(--serif);
+  opacity: 0; pointer-events: none; transition: opacity 1.2s ease;
+}
+#card.open { opacity: 1; pointer-events: auto; }
+#card .line { max-width: 680px; margin: .5em 0; opacity: 0; transition: opacity 1.2s ease; }
+#card .line.show { opacity: 1; }
+#card .line.quote { font-style: italic; color: var(--gold); font-size: 22px; }
+#card .line.cite { font: 13px system-ui, sans-serif; letter-spacing: .08em; color: rgba(236, 227, 207, .55); margin-top: -.2em; }
+#card .more { position: absolute; bottom: 28px; font: 12px system-ui; color: rgba(236, 227, 207, .5); animation: breathe 1.4s infinite; }
+
+/* --- Pensiero breve del viaggiatore, in alto ---------------------- */
+#thought {
+  position: fixed; left: 50%; top: 72px; transform: translateX(-50%);
+  max-width: min(640px, calc(100vw - 32px)); text-align: center;
+  font: italic 20px/1.4 var(--serif); color: #fff; text-shadow: 0 1px 8px rgba(0,0,0,.8);
+  opacity: 0; transition: opacity .6s ease; pointer-events: none;
+}
+#thought.show { opacity: 1; }
+
+/* --- Indicatore di interazione ------------------------------------ */
+#prompt {
+  position: fixed; left: 50%; bottom: 120px; transform: translateX(-50%);
+  font: 15px system-ui, sans-serif; color: #fff;
+  background: var(--night); border: 1px solid rgba(232, 194, 122, .4);
+  padding: 8px 14px; border-radius: 999px; pointer-events: none;
+  opacity: 0; transition: opacity .2s ease;
+}
+#prompt.show { opacity: 1; }
+#prompt kbd {
+  display: inline-block; min-width: 1.4em; text-align: center; margin-right: 8px;
+  font: 600 13px system-ui; color: var(--ink); background: var(--gold);
+  border-radius: 4px; padding: 1px 5px;
+}
+
+/* --- Diario -------------------------------------------------------- */
+#journal {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(10, 8, 6, .6); opacity: 0; pointer-events: none; transition: opacity .3s ease;
+  padding: 16px; box-sizing: border-box;
+}
+#journal.open { opacity: 1; pointer-events: auto; }
+#journal .book {
+  width: min(760px, 100%); max-height: calc(100vh - 64px); overflow: auto;
+  background: var(--paper); color: var(--ink); border-radius: 6px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  padding: 32px 40px; box-sizing: border-box; font: 19px/1.55 var(--serif);
+}
+#journal h2 { font: 600 30px var(--serif); margin: 0 0 4px; }
+#journal .sub { font: 12px system-ui; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 24px; }
+#journal .entry { border-top: 1px solid rgba(43, 36, 28, .15); padding: 16px 0; }
+#journal .entry h3 { font: 600 21px var(--serif); margin: 0 0 6px; }
+#journal .entry .fate { font: 12px system-ui; letter-spacing: .06em; color: var(--ink-soft); text-transform: uppercase; }
+#journal .empty { color: var(--ink-soft); font-style: italic; }
+#journal .close { font: 12px system-ui; color: var(--ink-soft); margin-top: 16px; }
+
+@media (max-width: 600px) {
+  #dialogue { font-size: 18px; padding: 18px 18px 16px; }
+  #card { font-size: 21px; }
+  #journal .book { padding: 24px 20px; }
+}

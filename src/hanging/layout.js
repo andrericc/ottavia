@@ -11,7 +11,8 @@
 import { chandelier, waterskin, basket, plantPot, hammock, trapeze, rings, ropeLadder, sackHouse } from './items.js';
 
 export function populateOttavia(system, net) {
-  const put = (make, opts) => system.add(make(net, opts));
+  // 'id' dà un nome agli oggetti che servono alla storia (vedi story/Story.js)
+  const put = (make, opts) => { const it = system.add(make(net, opts)); if (opts.id) it.id = opts.id; return it; };
 
   // Case fatte a sacco, ai due lati della città
   put(sackHouse, { i: 2, j: 13, drop: 1.4, yaw: Math.PI / 2, seed: 3 });
@@ -19,7 +20,7 @@ export function populateOttavia(system, net) {
   put(sackHouse, { i: 4, j: 29, drop: 1.8, yaw: Math.PI / 2 + 0.4, seed: 11 });
 
   // Lampadari (contengono una luce vera: non esagerare, ogni luce costa)
-  put(chandelier, { i: 8, j: 8, length: 2.5 });
+  put(chandelier, { i: 9, j: 8, length: 2.5, id: 'lamp' }); // frammento 1
   put(chandelier, { i: 16, j: 16, length: 3.0 });
   put(chandelier, { i: 8, j: 31, length: 2.8 });
 

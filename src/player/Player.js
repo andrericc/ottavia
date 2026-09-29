@@ -57,6 +57,7 @@ export class Player {
     this.object = this.traveler.root;
     this.animator = new TravelerAnimator(this.traveler);
     this.hangMoving = false;
+    this.frozen = false;      // true mentre si legge un testo o si sceglie
 
     // Input: 'keys' = tasti tenuti premuti, 'pressed' = premuti in questo frame
     this.keys = new Set();
@@ -74,7 +75,9 @@ export class Player {
   // ---------------------------------------------------------------
   update(dt, cameraYaw) {
     this.time += dt;
-    const move = this.readInput(cameraYaw);
+    // durante un dialogo il viaggiatore sta fermo (e Spazio non lo fa saltare)
+    if (this.frozen) this.pressed.clear();
+    const move = this.frozen ? null : this.readInput(cameraYaw);
 
     if (this.state === 'walk') this.updateWalk(dt, move);
     else if (this.state === 'hang') this.updateHang(dt, move);
@@ -394,13 +397,14 @@ export class Player {
   get hint() {
     if (this.state === 'hang') {
       const bar = '█'.repeat(Math.ceil(this.grip * 10)).padEnd(10, '░');
-      return `Appeso alla rete · presa ${bar} · WASD per spostarti` +
-        (this.canClimb ? ' · <b>Spazio</b> per risalire' : ' · cerca una traversina');
+      return `Hanging from the net · grip ${bar} · WASD to move hand over hand` +
+        (this.canClimb ? ' · <b>Space</b> to climb up' : ' · find a plank above you');
     }
-    if (this.state === 'fall') return 'Sotto non c\'è niente per centinaia e centinaia di metri…';
-    if (this.gapTimer > 0.12) return 'Attento agli intervalli!';
-    if (this.state === 'walk' && this.net.straining) return 'La rete sta cedendo! Non fermarti!';
-    if (this.state === 'walk' && this.plank && this.plank.worn) return 'Il legno è vecchio… sanno che più di tanto la rete non regge';
+    if (this.state === 'fall') return 'Below there is nothing for hundreds and hundreds of metres…';
+    if (this.gapTimer > 0.12) return 'Mind the gaps!';
+    if (this.state === 'walk' && this.net.straining) return 'The net is giving way! Keep moving!';
+    if (this.state === 'walk' && this.plank && this.plank.worn) return 'Grey wood. Do not stop here.';
     return '';
   }
+
 }

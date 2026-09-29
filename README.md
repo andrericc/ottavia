@@ -20,6 +20,8 @@ npm run build
 
 ## Controlli
 
+- **E** interagisci (leggi, esamina) · avanti nel testo · **1 / 2** scegli
+- **J** diario · **Esc** chiudi
 - **WASD** muovi il viaggiatore (anche quando è appeso sotto la rete)
 - **Spazio** salta · quando sei appeso, risali sulla traversina più vicina
 - **Mouse** tieni premuto e trascina per ruotare la camera
@@ -40,6 +42,15 @@ src/
 │   ├── Traveler.js       il viaggiatore: modello gerarchico (22 articolazioni)
 │   ├── TravelerAnimator.js  animazione procedurale di ogni stato
 │   └── FollowCamera.js   camera in terza persona (con scossone)
+├── story/
+│   ├── texts.js          TUTTI i testi del gioco (inglese), da modificare qui
+│   └── Story.js          la storia: eventi, scelte, cosa si ricorda
+├── ui/
+│   ├── Narrator.js       riquadro di testo, scelte, cartelli, pensieri (con Promise)
+│   ├── Journal.js        il diario (J)
+│   └── style.css         stile dell'interfaccia narrativa
+├── interaction/
+│   └── InteractionManager.js  tasto E: oggetto più vicino, indicatore, prompt
 ├── hanging/              tutto ciò che sta appeso sotto la rete
 │   ├── VerletBody.js     corpo morbido generico: particelle + funi/aste (Verlet)
 │   ├── HangingSystem.js  gestisce gli oggetti: pesi sulla rete, fisica, disegno delle funi
@@ -48,6 +59,7 @@ src/
 │   └── textures.js       texture procedurali (tela a righe, sacco rattoppato)
 └── world/
     ├── World.js          creste, burrone, luci, nebbia
+    ├── NotePost.js       il palo con il biglietto del Knot-keeper
     └── Debris.js         oggetti che precipitano (traversine cadute)
 ```
 
@@ -137,3 +149,20 @@ un trapezio, gli anelli e una scala di corda.
 - **Texture procedurali** disegnate con il Canvas 2D: tela a righe e sacco rattoppato.
 - **Prestazioni.** Tutte le funi sono una sola `LineSegments`, e le foglie e i pioli sono
   `InstancedMesh`. La fisica di 300 particelle costa meno di 0,1 ms per passo.
+
+## Interazione e narrazione (step 7)
+
+- **Tasto E.** `InteractionManager` sceglie ogni frame l'interazione più vicina, preferendo
+  ciò che sta davanti al viaggiatore, e la segnala con un rombo dorato che ruota e fluttua
+  sopra l'oggetto, più la scritta `[E] Read` in basso. Qualunque cosa diventa interattiva
+  con `interactions.add({...})`.
+- **Narrazione con Promise.** `Narrator` scrive il testo lettera per lettera e offre scelte
+  e cartelli a tutto schermo. Ogni funzione restituisce una Promise, così la storia in
+  `Story.js` si legge come un copione: `await say(...)`, `await choose(...)`.
+- **Testi separati dal codice.** Tutto è in `story/texts.js`.
+- **Già giocabile:**
+  - apertura con la citazione di Calvino (aggiungere `?skip` all'indirizzo per saltarla);
+  - il biglietto sul palo, con il foglio che si muove nel vento;
+  - il primo frammento, la lampada: la esamini, leggi la storia e scegli. Se la lasci
+    andare, precipita accesa e il suo peso sparisce dalla rete;
+  - il diario (J) raccoglie tutto quello che hai letto e le tue scelte.

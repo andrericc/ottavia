@@ -28,6 +28,20 @@ export class Debris {
     });
   }
 
+  // Fa cadere un oggetto intero (un gruppo con figli, luci comprese).
+  // L'oggetto non viene distrutto: con R torna al suo posto.
+  spawnObject(object, velocity = new THREE.Vector3()) {
+    object.updateMatrixWorld(true);
+    this.scene.attach(object); // cambia genitore mantenendo la posizione nel mondo
+    this.items.push({
+      mesh: object, owned: false,
+      velocity: velocity.clone(),
+      axis: new THREE.Vector3(Math.random() - 0.5, 0.2, Math.random() - 0.5).normalize(),
+      spin: 0.6 + Math.random() * 0.8,
+      age: 0, life: 9,
+    });
+  }
+
   update(dt) {
     for (let k = this.items.length - 1; k >= 0; k--) {
       const d = this.items[k];
@@ -36,14 +50,14 @@ export class Debris {
       d.velocity.multiplyScalar(1 - 0.05 * dt); // un filo di resistenza dell'aria
       d.mesh.position.addScaledVector(d.velocity, dt);
       d.mesh.quaternion.premultiply(this._q.setFromAxisAngle(d.axis, d.spin * dt));
-      if (d.age > 6) this.remove(k);
+      if (d.age > (d.life ?? 6)) this.remove(k);
     }
   }
 
   remove(k) {
     const d = this.items[k];
     this.scene.remove(d.mesh);
-    d.mesh.material.dispose();
+    if (d.owned !== false) d.mesh.material.dispose();
     this.items.splice(k, 1);
   }
 
