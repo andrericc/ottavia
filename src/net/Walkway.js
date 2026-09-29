@@ -17,6 +17,7 @@ export class Walkway {
     fromCol = 10,       // prima colonna della passerella
     toCol = 14,         // ultima colonna (larghezza = toCol - fromCol metri)
     missing = [],       // file di traversine mancanti (buchi più grandi da saltare)
+    worn = [],          // file di traversine vecchie (legno grigio, funi logore sotto)
     depth = 0.6,        // profondità dell'asse lungo Z (il resto della maglia è "intervallo")
     thickness = 0.06,
     overhang = 0.15,    // quanto l'asse sporge oltre i nodi ai lati
@@ -31,7 +32,7 @@ export class Walkway {
     for (let j = 0; j < net.rows; j++) {
       if (missing.includes(j)) continue;
       const plank = {
-        row: j, i0: fromCol, i1: toCol, broken: false,
+        row: j, i0: fromCol, i1: toCol, broken: false, worn: worn.includes(j),
         top: new THREE.Vector3(),          // un punto della faccia superiore (aggiornato ogni frame)
         normal: new THREE.Vector3(0, 1, 0), // normale dell'asse
       };
@@ -47,10 +48,13 @@ export class Walkway {
 
     // Ogni asse con una sfumatura di legno leggermente diversa
     const base = new THREE.Color('#7a5a3a');
+    const old = new THREE.Color('#6b6358');   // legno vecchio: grigio, sbiadito
     const c = new THREE.Color();
     this.planks.forEach((p, k) => {
-      c.copy(base).offsetHSL((Math.random() - 0.5) * 0.02, 0, (Math.random() - 0.5) * 0.08);
+      c.copy(p.worn ? old : base).offsetHSL((Math.random() - 0.5) * 0.02, 0, (Math.random() - 0.5) * 0.08);
       this.object.setColorAt(k, c);
+      p.color = c.clone();
+      p.index = k;
     });
 
     // oggetti temporanei riusati a ogni frame (evitiamo di creare garbage)
@@ -135,6 +139,35 @@ export class Walkway {
     for (let i = 0; i <= n; i++) {
       net.acc[net.index(p.i0 + i, p.row) * 3 + 1] -= force * w[i] / total;
     }
+  }
+
+  // Controlla se qualche traversina ha perso il suo sostegno: quando almeno 2 funi
+  // longitudinali legate ai suoi nodi sono spezzate, l'asse si stacca e cade.
+  // Restituisce le traversine appena cadute (con la loro matrice, per animarle).
+  checkBroken() {
+    const net = this.net, fallen = [];
+    for (const p of this.planks) {
+      if (p.broken) continue;
+      let count = 0;
+      for (let i = p.i0; i <= p.i1; i++) {
+        const up = p.row > 0 ? net.vRope[net.index(i, p.row - 1)] : -1;
+        const down = net.vRope[net.index(i, p.row)];
+        if (up >= 0 && net.broken[up]) count++;
+        if (down >= 0 && net.broken[down]) count++;
+      }
+      if (count >= 2) {
+        const matrix = new THREE.Matrix4();
+        this.object.getMatrixAt(p.index, matrix);
+        p.broken = true;
+        fallen.push({ plank: p, matrix });
+      }
+    }
+    return fallen;
+  }
+
+  reset() {
+    for (const p of this.planks) p.broken = false;
+    this.update();
   }
 
   // Posizione Z reale (non a riposo) del centro di una traversina

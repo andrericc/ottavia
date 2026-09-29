@@ -13,8 +13,10 @@
 //  negli intervalli, o ci si aggrappa alle maglie di canapa." (Calvino)
 // ---------------------------------------------------------------
 import * as THREE from 'three';
+import { Traveler, DIMS } from './Traveler.js';
+import { TravelerAnimator } from './TravelerAnimator.js';
 
-const ARM_REACH = 1.65;   // distanza piedi → mani quando le braccia sono alzate
+const ARM_REACH = DIMS.reach;   // distanza piedi → mani quando le braccia sono alzate (dal modello)
 
 export class Player {
   constructor({ net, world, walkway, start }) {
@@ -31,7 +33,7 @@ export class Player {
 
     // Parametri di gioco
     this.speed = 3.2;         // camminata (m/s)
-    this.hangSpeed = 1.1;     // spostamento appeso alla rete, mano dopo mano
+    this.hangSpeed = 1.4;     // spostamento appeso alla rete, mano dopo mano
     this.jumpSpeed = 5.5;
     this.gravity = -18;
     this.weight = 800;        // forza scaricata sulla rete
@@ -44,12 +46,17 @@ export class Player {
     this.hands = new THREE.Vector3();   // dove sono aggrappate le mani (quando appeso)
     this.climb = null;        // dati dell'animazione di risalita
     this.plank = null;        // traversina su cui poggiano i piedi (se c'è)
+    this.stridePlank = null;  // traversina vicina mentre si scavalca un intervallo
     this.plankZPrev = null;
     this.impact = 0;          // colpo extra sulla rete (atterraggi, scivolate)
     this.canClimb = false;
     this.time = 0;
 
-    this.buildMesh();
+    // Il modello gerarchico e la sua animazione procedurale
+    this.traveler = new Traveler();
+    this.object = this.traveler.root;
+    this.animator = new TravelerAnimator(this.traveler);
+    this.hangMoving = false;
 
     // Input: 'keys' = tasti tenuti premuti, 'pressed' = premuti in questo frame
     this.keys = new Set();
@@ -60,34 +67,6 @@ export class Player {
       if (e.code === 'Space') e.preventDefault();
     });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
-  }
-
-  buildMesh() {
-    this.object = new THREE.Group();
-    this.body = new THREE.Group();   // tutto ciò che oscilla quando perde l'equilibrio
-    this.object.add(this.body);
-
-    const cloth = new THREE.MeshStandardMaterial({ color: '#2f3b4a', roughness: 0.8 });
-    const skin = new THREE.MeshStandardMaterial({ color: '#d8c3a5' });
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.1, 0.3), cloth);
-    torso.position.y = 0.55;
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), skin);
-    head.position.y = 1.3;
-    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.15), cloth);
-    nose.position.set(0, 1.3, 0.2);
-    this.body.add(torso, head, nose);
-
-    // Braccia: un "perno" alla spalla con il braccio appeso sotto.
-    // Ruotando il perno di 180° il braccio si alza (anteprima dello step 5).
-    this.arms = [-1, 1].map((side) => {
-      const pivot = new THREE.Group();
-      pivot.position.set(side * 0.32, 1.05, 0);
-      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.6, 0.12), cloth);
-      arm.position.y = -0.3;
-      pivot.add(arm);
-      this.body.add(pivot);
-      return pivot;
-    });
   }
 
   // ---------------------------------------------------------------
@@ -124,6 +103,7 @@ export class Player {
   // --- WALK ------------------------------------------------------
   updateWalk(dt, move) {
     const p = this.position, v = this.velocity;
+    const y0 = p.y; // altezza a inizio frame
 
     if (move) {
       v.x = move.x * this.speed;
@@ -144,18 +124,34 @@ export class Player {
     const crest = this.world.groundHeightAt(p.x, p.z);
     const netH = crest === null ? this.net.heightAt(p.x, p.z) : null;
     const plank = netH !== null ? this.walkway.plankUnder(p.x, p.z, this.plank) : null;
+    const netOk = netH !== null && this.net.cellIntact(p.x, p.z); // sotto c'è rete integra?
     let surf = null;
     if (crest !== null) surf = crest;
     else if (plank) surf = this.walkway.plankTopAt(plank, p.x, p.z); // piedi sul piano dell'asse
-    else if (netH !== null) surf = netH;                             // piedi sulle funi
+    else if (netOk) surf = netH;                                     // piedi sulle funi
 
     if (plank !== this.plank) this.plankZPrev = plank ? this.walkway.plankZ(plank) : null;
     this.plank = plank;
     const wasOnGround = this.onGround;
+
+    // Passo sopra un intervallo tra due traversine: un piede è ancora sull'asse,
+    // quindi il corpo non scende nel buco e il peso resta sulle assi vicine.
+    this.stridePlank = null;
+    if (wasOnGround && crest === null && !plank && netOk && v.y <= 0) {
+      this.stridePlank = this.walkway.nearestPlank(p.x, p.z, 0.7);
+      if (this.stridePlank) surf = Math.max(netH, y0);
+    }
+
+    // La rete si è strappata sotto i piedi: istintivamente ci si aggrappa alle maglie vicine
+    if (wasOnGround && surf === null && netH !== null) {
+      const grip = this.findGrip(p.x, p.z, 1.3);
+      if (grip) { this.startHang(grip); return; }
+    }
+
     const snap = wasOnGround ? 0.4 : 0.05;
     this.onGround = false;
     if (surf !== null && p.y <= surf + snap && v.y <= 0) {
-      if (!wasOnGround) this.impact = Math.min(-v.y, 12) * 250;
+      if (!wasOnGround) this.impact = 2000 + Math.min(-v.y, 12) * 400; // atterrare colpisce la rete
       p.y = surf;
       v.y = 0;
       this.onGround = true;
@@ -164,9 +160,9 @@ export class Player {
     if (!this.onGround) { this.gapTimer = 0; if (p.y < -8) this.startFall(); return; }
 
     if (crest !== null || plank) {
-      // piede ben piantato: memorizzo il punto e recupero la presa
+      // piede ben piantato: memorizzo il punto (se è legno sano) e recupero la presa
       this.gapTimer = 0;
-      this.lastSafe.copy(p);
+      if (!plank || !plank.worn) this.lastSafe.copy(p);
       this.grip = Math.min(1, this.grip + dt / 3);
     } else {
       // piede in un intervallo: si barcolla, e dopo un attimo si scivola giù
@@ -176,22 +172,60 @@ export class Player {
   }
 
   // --- HANG ------------------------------------------------------
-  startHang() {
+  // at = punto in cui aggrapparsi (se non dato: sotto i piedi, o la maglia integra più vicina)
+  startHang(at = null) {
+    const grip = at || this.findGrip(this.position.x, this.position.z, 1.0);
+    if (!grip) { this.startFall(); return; }
     this.state = 'hang';
     this.gapTimer = 0;
     this.velocity.set(0, 0, 0);
-    this.hands.set(this.position.x, 0, this.position.z);
+    this.hands.set(grip.x, 0, grip.z);
     this.impact = 1500; // lo strattone della scivolata si sente sulla rete
+  }
+
+  // Il punto di rete integra più vicino a (x, z) entro 'reach' metri, o null.
+  // Istintivamente si preferisce la canapa sana: le maglie vecchie "contano" 0,7 m in più.
+  findGrip(x, z, reach) {
+    const net = this.net, s = net.spacing;
+    const ci = Math.floor((x - net.x0) / s), cj = Math.floor((z - net.z0) / s);
+    const r = Math.ceil(reach / s) + 1;
+    let best = null, bestD = reach;
+    for (let j = cj - r; j <= cj + r; j++) {
+      for (let i = ci - r; i <= ci + r; i++) {
+        if (!net.cellIntactIJ(i, j)) continue;
+        // punto della cella più vicino a (x, z), un po' all'interno del bordo
+        const gx = THREE.MathUtils.clamp(x, net.x0 + i * s + 0.1, net.x0 + (i + 1) * s - 0.1);
+        const gz = THREE.MathUtils.clamp(z, net.z0 + j * s + 0.1, net.z0 + (j + 1) * s - 0.1);
+        const worn = net.worn[net.vRope[net.index(i, j)]] || net.worn[net.vRope[net.index(i + 1, j)]];
+        const d = Math.hypot(gx - x, gz - z) + (worn ? 0.7 : 0);
+        if (d < bestD) { bestD = d; best = { x: gx, z: gz }; }
+      }
+    }
+    return best;
   }
 
   updateHang(dt, move) {
     const net = this.net, h = this.hands;
 
-    // mano dopo mano sotto la rete
+    // la maglia a cui sono aggrappato si è strappata: provo a riprendermi, se no cado
+    if (!net.cellIntact(h.x, h.z)) {
+      const grip = this.findGrip(h.x, h.z, 1.2);
+      if (!grip) { this.startFall(); return; }
+      h.x = grip.x; h.z = grip.z;
+    }
+
+    // mano dopo mano sotto la rete (ma non dentro i buchi: lì non c'è niente a cui tenersi)
     if (move) {
-      h.x += move.x * this.hangSpeed * dt;
-      h.z += move.z * this.hangSpeed * dt;
+      const nx = h.x + move.x * this.hangSpeed * dt;
+      const nz = h.z + move.z * this.hangSpeed * dt;
+      const hx = h.x, hz = h.z;
+      if (net.cellIntact(nx, nz)) { h.x = nx; h.z = nz; }
+      else if (net.cellIntact(nx, h.z)) h.x = nx;   // scivolo lungo il bordo del buco
+      else if (net.cellIntact(h.x, nz)) h.z = nz;
       this.facing = Math.atan2(move.x, move.z);
+      this.hangMoving = h.x !== hx || h.z !== hz;
+    } else {
+      this.hangMoving = false;
     }
     const W = (net.cols - 1) * net.spacing, L = (net.rows - 1) * net.spacing;
     h.x = THREE.MathUtils.clamp(h.x, net.x0 + 0.1, net.x0 + W - 0.1);
@@ -231,6 +265,8 @@ export class Player {
 
   updateClimb(dt) {
     const c = this.climb;
+    // la traversina verso cui salivo è caduta: mi riaggrappo
+    if (c.target.plank && c.target.plank.broken) { this.startHang(this.findGrip(this.hands.x, this.hands.z, 1.0)); return; }
     c.t = Math.min(1, c.t + dt / c.duration);
     const e = c.t * c.t * (3 - 2 * c.t); // smoothstep: parte e arriva dolcemente
 
@@ -269,6 +305,16 @@ export class Player {
     if (this.fallTime > 2.2) this.respawn();
   }
 
+  // Ricomincia dall'inizio (tasto R)
+  reset(start) {
+    this.lastSafe.copy(start);
+    this.respawn();
+    this.position.copy(start);
+    this.plank = null;
+    this.plankZPrev = null;
+    this.impact = 0;
+  }
+
   respawn() {
     this.state = 'walk';
     this.position.copy(this.lastSafe);
@@ -292,7 +338,7 @@ export class Player {
         if (this.plankZPrev !== null) p.z += z - this.plankZPrev;
         this.plankZPrev = z;
         p.y = this.walkway.plankTopAt(this.plank, p.x, p.z);
-      } else {
+      } else if (!this.stridePlank && this.net.cellIntact(p.x, p.z)) {
         const h = this.net.heightAt(p.x, p.z);
         if (h !== null) p.y = h;
       }
@@ -312,9 +358,10 @@ export class Player {
       if (!this.onGround) return;
       x = this.position.x; z = this.position.z;
       if (this.world.groundHeightAt(x, z) !== null) return; // sono sulla roccia
-      if (this.plank) {                                      // sono su un'asse
-        this.walkway.applyLoad(this.plank, x, this.weight + this.impact);
-        this.impact = 0;
+      const plank = this.plank || this.stridePlank;
+      if (plank) {                                           // sono su un'asse (o sto scavalcando)
+        this.walkway.applyLoad(plank, x, this.weight + this.impact);
+        this.impact *= 0.92;
         return;
       }
     } else if (this.state === 'hang' || this.state === 'climb') {
@@ -322,27 +369,25 @@ export class Player {
     } else return;
 
     this.net.applyLoad(x, z, this.weight + this.impact);
-    this.impact = 0;
+    this.impact *= 0.92; // il colpo si smorza in circa un decimo di secondo
   }
 
   // ---------------------------------------------------------------
-  // Aspetto: posizione, barcollamento, braccia
+  // Aspetto: il modello gerarchico, animato da TravelerAnimator
   // ---------------------------------------------------------------
   updateMesh(dt) {
     this.object.position.copy(this.position);
-    this.object.rotation.y = this.facing;
-
-    // barcolla quando il piede è in un intervallo
-    const wobble = this.gapTimer / this.gapLimit;
-    this.body.rotation.z = Math.sin(this.time * 30) * 0.25 * wobble;
-
-    // braccia alzate quando è appeso o sta risalendo
-    const armsUp = this.state === 'hang' || this.state === 'climb' || this.state === 'fall';
-    const target = armsUp ? Math.PI : 0;
-    for (const a of this.arms) a.rotation.x += (target - a.rotation.x) * (1 - Math.exp(-15 * dt));
-
-    // appeso: il corpo dondola un po' sotto le mani
-    this.body.rotation.x = this.state === 'hang' ? Math.sin(this.time * 2.2) * 0.08 : 0;
+    this.animator.update(dt, {
+      state: this.state,
+      onGround: this.onGround,
+      speed: this.state === 'walk' ? Math.hypot(this.velocity.x, this.velocity.z) : 0,
+      vy: this.velocity.y,
+      wobble: Math.min(1, this.gapTimer / this.gapLimit),
+      climbT: this.climb ? this.climb.t : 0,
+      hands: this.state === 'hang' ? this.hands : null,
+      hangSpeed: this.hangMoving ? this.hangSpeed : 0,
+      facing: this.facing,
+    });
   }
 
   // Testo di aiuto per l'HUD
@@ -353,7 +398,9 @@ export class Player {
         (this.canClimb ? ' · <b>Spazio</b> per risalire' : ' · cerca una traversina');
     }
     if (this.state === 'fall') return 'Sotto non c\'è niente per centinaia e centinaia di metri…';
-    if (this.gapTimer > 0) return 'Attento agli intervalli!';
+    if (this.gapTimer > 0.12) return 'Attento agli intervalli!';
+    if (this.state === 'walk' && this.net.straining) return 'La rete sta cedendo! Non fermarti!';
+    if (this.state === 'walk' && this.plank && this.plank.worn) return 'Il legno è vecchio… sanno che più di tanto la rete non regge';
     return '';
   }
 }

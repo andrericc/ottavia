@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 
 const ROPE = new THREE.Color('#c9b48a');   // canapa
+const WORN = new THREE.Color('#6e675c');   // canapa vecchia, ingrigita
 const STRAIN = new THREE.Color('#e0442e'); // fune al limite
 
 export class NetMesh {
@@ -30,9 +31,10 @@ export class NetMesh {
     this.update();
   }
 
-  update() {
+  update(time = 0) {
     const { net, positions, colors } = this;
     const tmp = new THREE.Color();
+    const flicker = 0.5 + 0.5 * Math.sin(time * 40); // le funi che stanno cedendo lampeggiano
     for (let c = 0; c < net.rest.length; c++) {
       const o = c * 6;
       if (net.broken[c]) {
@@ -44,8 +46,11 @@ export class NetMesh {
       positions[o] = net.pos[ka]; positions[o + 1] = net.pos[ka + 1]; positions[o + 2] = net.pos[ka + 2];
       positions[o + 3] = net.pos[kb]; positions[o + 4] = net.pos[kb + 1]; positions[o + 5] = net.pos[kb + 2];
 
+      // rosso = tesa (allungamento) o logorata (danno accumulato, che resta)
       const t = Math.min(1, net.stress[c] / this.breakStress);
-      tmp.copy(ROPE).lerp(STRAIN, t * t);
+      let red = Math.max(t * t, net.damage[c]);
+      if (net.ratio[c] > 1) red = Math.max(red, 0.5 + 0.5 * flicker);
+      tmp.copy(net.worn[c] ? WORN : ROPE).lerp(STRAIN, red);
       colors[o] = colors[o + 3] = tmp.r;
       colors[o + 1] = colors[o + 4] = tmp.g;
       colors[o + 2] = colors[o + 5] = tmp.b;
@@ -54,8 +59,8 @@ export class NetMesh {
     this.geometry.attributes.color.needsUpdate = true;
   }
 
-  // Tensione complessiva 0..1 (per HUD, audio, ecc.)
+  // Quanto la rete è vicina a cedere, 0..1 (per HUD, audio, ecc.)
   get tension() {
-    return Math.min(1, this.net.maxStress / this.breakStress);
+    return Math.min(1, this.net.maxRatio);
   }
 }

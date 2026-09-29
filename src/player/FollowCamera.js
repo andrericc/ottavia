@@ -12,6 +12,8 @@ export class FollowCamera {
     this.pitch = 0.35;       // inclinazione verso il basso
     this.distance = 7;
     this.target = new THREE.Vector3();
+    this.trauma = 0;         // scossone della camera (0..1), si smorza da solo
+    this.time = 0;
 
     let dragging = false;
     dom.addEventListener('pointerdown', () => (dragging = true));
@@ -26,7 +28,13 @@ export class FollowCamera {
     }, { passive: true });
   }
 
+  // Scuote la camera (es. quando una fune si spezza). amount: 0..1
+  shake(amount) {
+    this.trauma = Math.min(1, this.trauma + amount);
+  }
+
   update(dt, playerPos) {
+    this.time += dt;
     // Il bersaglio segue il giocatore con un po' di morbidezza
     const desired = playerPos.clone().add(new THREE.Vector3(0, 1.2, 0));
     this.target.lerp(desired, 1 - Math.exp(-10 * dt));
@@ -39,5 +47,15 @@ export class FollowCamera {
 
     this.camera.position.copy(this.target).add(offset);
     this.camera.lookAt(this.target);
+
+    // scossone: rotazioni piccole e rapide, proporzionali a trauma² (così i colpi piccoli
+    // si sentono appena e quelli grandi molto)
+    if (this.trauma > 0) {
+      const k = this.trauma * this.trauma * 0.05, t = this.time * 35;
+      this.camera.rotation.x += Math.sin(t * 1.3) * k;
+      this.camera.rotation.y += Math.sin(t * 1.7 + 1) * k;
+      this.camera.rotation.z += Math.sin(t * 2.1 + 2) * k;
+      this.trauma = Math.max(0, this.trauma - dt * 1.2);
+    }
   }
 }
