@@ -58,6 +58,7 @@ export class Player {
     this.animator = new TravelerAnimator(this.traveler);
     this.hangMoving = false;
     this.frozen = false;      // true mentre si legge un testo o si sceglie
+    this.action = null;       // gesto in corso durante un'interazione: 'pull' | 'hold' | null
 
     // Input: 'keys' = tasti tenuti premuti, 'pressed' = premuti in questo frame
     this.keys = new Set();
@@ -390,6 +391,7 @@ export class Player {
       hands: this.state === 'hang' ? this.hands : null,
       hangSpeed: this.hangMoving ? this.hangSpeed : 0,
       facing: this.facing,
+      action: this.action,
     });
   }
 

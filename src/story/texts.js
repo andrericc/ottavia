@@ -86,6 +86,7 @@ export const TEXTS = {
 
   thoughts: {
     greyWoodFirst: 'The net won\'t hold me. Not like this. Not with everything it is already carrying.',
+    greyWoodAgain: 'Not yet. Not with everything it is still carrying.',
     ropeBelow: 'Something hangs down there. I could pull it up.',
     afterLetGo: 'The net lifts, just a little. I can feel it through the planks.',
     afterKeep: 'Its weight stays with the city. And a little with me.',
@@ -105,7 +106,7 @@ export const TEXTS = {
   },
 
   ui: {
-    prompts: { read: 'Read', examine: 'Examine', pull: 'Pull up', lever: 'Pull the lever' },
+    prompts: { read: 'Read', examine: 'Examine', pull: 'Pull up the rope', pullAgain: 'Pull it up again', lever: 'Pull the lever' },
     choices: { letGo: 'Let it go', keep: 'Leave it hanging' },
     journalTitle: 'Journal',
     journalSub: 'What Ottavia has told me',

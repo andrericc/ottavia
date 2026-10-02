@@ -43,11 +43,29 @@ export class HangingSystem {
     return body.pos[i];
   }
 
-  // Taglia le funi: l'oggetto precipita e il suo peso sparisce dalla rete
+  // Dove si trova l'oggetto vero e proprio: la fine della sua (prima) fune
+  focusOf(item) {
+    const body = item.bodies[0];
+    return body.pos[body.pos.length - 1];
+  }
+
+  // Accorcia (f < 1) o riallunga (f = 1) le funi dell'oggetto: è il gesto di "tirarlo su".
+  // Le funi resistono solo alla trazione, quindi accorciandole l'oggetto sale da solo.
+  reel(item, f) {
+    for (const c of item.bodies[0].constraints) if (!c.rigid && c.baseLen) c.len = c.baseLen * f;
+  }
+
+  // Taglia le funi: l'oggetto precipita e il suo peso sparisce dalla rete.
+  // Lo appendo a un perno nel punto dell'oggetto, così ruota attorno a sé mentre cade.
   release(item, debris) {
-    if (item.released) return;
+    if (item.released) return null;
     item.released = true;
-    debris.spawnObject(item.object, new THREE.Vector3(0, -0.5, 0));
+    const pivot = new THREE.Group();
+    pivot.position.copy(this.focusOf(item));
+    this.scene.add(pivot);
+    pivot.attach(item.object);
+    debris.spawnObject(pivot, new THREE.Vector3(0, -0.5, 0));
+    return pivot;
   }
 
   // Da chiamare dopo aver aggiunto tutti gli oggetti: prepara le funi da disegnare
@@ -56,7 +74,10 @@ export class HangingSystem {
     for (const item of this.items) {
       for (const body of item.bodies) {
         body.save();
-        for (const c of body.constraints) if (c.visible) this.visible.push({ item, body, c });
+        for (const c of body.constraints) {
+          c.baseLen = c.len; // lunghezza originale, per poter accorciare e riallungare le funi
+          if (c.visible) this.visible.push({ item, body, c });
+        }
       }
     }
     const n = this.visible.length;
@@ -115,8 +136,16 @@ export class HangingSystem {
 
   reset() {
     for (const item of this.items) {
-      if (item.released) { item.released = false; this.group.add(item.object); }
-      for (const body of item.bodies) body.reset();
+      if (item.released) {
+        item.released = false;
+        item.object.position.set(0, 0, 0);   // dopo la caduta era relativo al perno: lo azzero
+        item.object.quaternion.identity();
+        this.group.add(item.object);
+      }
+      for (const body of item.bodies) {
+        body.reset();
+        for (const c of body.constraints) if (c.baseLen) c.len = c.baseLen;
+      }
       item.update?.(0, 0);
     }
   }

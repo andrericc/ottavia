@@ -74,6 +74,8 @@ export class TravelerAnimator {
     let rate = 18;
     if (ctx.state === 'walk') {
       if (ctx.onGround) { this.poseGround(dt, ctx); rate = 22; } else this.poseAir(ctx);
+      if (ctx.action === 'pull') { this.posePull(); rate = 16; }
+      else if (ctx.action === 'hold') { this.poseHold(); rate = 10; }
       if (ctx.wobble > 0) this.poseWobble(ctx.wobble);
     } else if (ctx.state === 'hang') this.poseHang(dt, ctx);
     else if (ctx.state === 'climb') { this.poseClimb(ctx.climbT); rate = 20; }
@@ -156,6 +158,28 @@ export class TravelerAnimator {
       0);
     // la testa compensa la torsione del busto: lo sguardo resta dritto
     this.add('head', 0, 0.2 * w * Math.sin(p) * 0.6, 0);
+  }
+
+  // --- TIRARE SU UNA FUNE: chino, le braccia si alternano mano dopo mano ---
+  // Ritmo di 2,5 tirate al secondo, lo stesso dell'avvolgimento in Story.js
+  posePull() {
+    const ph = this.time * Math.PI * 2 * 1.25, s = Math.sin(ph);
+    this.set('spine', 0.45); this.set('chest', 0.1); this.set('head', 0.35);
+    this.set('hipL', -0.45); this.set('kneeL', 0.8); this.set('ankleL', -0.35);
+    this.set('hipR', -0.15); this.set('kneeR', 0.5); this.set('ankleR', -0.35);
+    // un braccio scende a prendere la fune mentre l'altro la tira su
+    this.set('shoulderL', -1.0 - 0.55 * s, 0, 0.1); this.set('elbowL', -0.5 - 0.6 * Math.max(0, s));
+    this.set('shoulderR', -1.0 + 0.55 * s, 0, -0.1); this.set('elbowR', -0.5 - 0.6 * Math.max(0, -s));
+    this.set('pelvis', 0, 0.08 * s, 0);
+  }
+
+  // --- TENERE LA FUNE mentre si legge: braccia avanti, sguardo sull'oggetto ---
+  poseHold() {
+    const b = 0.02 * Math.sin(this.time * 1.6); // respiro
+    this.set('spine', 0.2 + b); this.set('head', 0.3);
+    this.set('shoulderL', -0.85, 0, 0.12); this.set('elbowL', -0.9);
+    this.set('shoulderR', -0.8, 0, -0.12); this.set('elbowR', -0.95);
+    this.set('kneeL', 0.2); this.set('kneeR', 0.15); this.set('hipL', -0.1);
   }
 
   // --- IN ARIA (salto) -----------------------------------------------------

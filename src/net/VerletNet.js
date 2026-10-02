@@ -102,6 +102,16 @@ export class VerletNet {
     }
   }
 
+  // Cambia la capacità di tutte le funi vecchie (la usa la storia: la "porta" del legno grigio)
+  setWornCapacity(capacity) {
+    for (let c = 0; c < this.capacity.length; c++) if (this.worn[c]) this.capacity[c] = capacity;
+  }
+
+  // Le funi vecchie si riposano: azzera il loro danno (solo quelle non ancora spezzate)
+  restWorn() {
+    for (let c = 0; c < this.damage.length; c++) if (this.worn[c] && !this.broken[c]) this.damage[c] = 0;
+  }
+
   // Una cella della rete è integra se tutte e quattro le sue funi reggono
   cellIntactIJ(i, j) {
     if (i < 0 || j < 0 || i >= this.cols - 1 || j >= this.rows - 1) return false;

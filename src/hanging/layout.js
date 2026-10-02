@@ -12,7 +12,19 @@ import { chandelier, waterskin, basket, plantPot, hammock, trapeze, rings, ropeL
 
 export function populateOttavia(system, net) {
   // 'id' dà un nome agli oggetti che servono alla storia (vedi story/Story.js)
-  const put = (make, opts) => { const it = system.add(make(net, opts)); if (opts.id) it.id = opts.id; return it; };
+  // 'weight' (facoltativo) sostituisce il peso totale dell'oggetto sulla rete
+  const put = (make, opts) => {
+    const it = system.add(make(net, opts));
+    if (opts.id) it.id = opts.id;
+    if (opts.weight) for (const l of it.loads) l.weight = opts.weight / it.loads.length;
+    return it;
+  };
+
+  // --- I FRAMMENTI DELLA STORIA, appesi accanto alla passerella (colonne 9 e 15).
+  // Pesano molto (i ricordi pesano): quando li lasci andare la rete risale di ~9 cm.
+  put(chandelier, { i: 9, j: 8, length: 2.5, id: 'lamp', weight: 300 });  // 1 · The Cartographer's Lamp
+  put(waterskin, { i: 9, j: 15, length: 1.4, id: 'water', weight: 300 }); // 2 · The Last Water
+  put(rings, { i: 15, j: 19, length: 1.6, id: 'rings', weight: 300 });    // 3 · The Second Ring
 
   // Case fatte a sacco, ai due lati della città
   put(sackHouse, { i: 2, j: 13, drop: 1.4, yaw: Math.PI / 2, seed: 3 });
@@ -20,7 +32,6 @@ export function populateOttavia(system, net) {
   put(sackHouse, { i: 4, j: 29, drop: 1.8, yaw: Math.PI / 2 + 0.4, seed: 11 });
 
   // Lampadari (contengono una luce vera: non esagerare, ogni luce costa)
-  put(chandelier, { i: 9, j: 8, length: 2.5, id: 'lamp' }); // frammento 1
   put(chandelier, { i: 16, j: 16, length: 3.0 });
   put(chandelier, { i: 8, j: 31, length: 2.8 });
 
@@ -44,9 +55,8 @@ export function populateOttavia(system, net) {
   put(hammock, { i1: 6, j1: 9, i2: 6, j2: 12 });
   put(hammock, { i1: 18, j1: 32, i2: 18, j2: 35 });
 
-  // Trapezio e anelli per i giochi
-  put(trapeze, { i: 15, j: 19, length: 2.2 });
-  put(rings, { i: 8, j: 35, length: 1.8 });
+  // Trapezio (gli anelli sono il frammento 3, in alto)
+  put(trapeze, { i: 16, j: 33, length: 2.2 });
 
   // Scala di corda vicino all'arrivo: più avanti servirà per scendere sotto la rete
   put(ropeLadder, { i: 15, j: 3, length: 6, rungs: 12 });

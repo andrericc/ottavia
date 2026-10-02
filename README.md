@@ -166,3 +166,27 @@ un trapezio, gli anelli e una scala di corda.
   - il primo frammento, la lampada: la esamini, leggi la storia e scegli. Se la lasci
     andare, precipita accesa e il suo peso sparisce dalla rete;
   - il diario (J) raccoglie tutto quello che hai letto e le tue scelte.
+
+## Tirare su, lasciar andare, la porta (step 8)
+
+- **Tirare su la fune (E).** Il viaggiatore si china e tira a mano a mano: sono 6 tirate,
+  a tempo con l'animazione delle braccia (`posePull`). Le funi dell'oggetto si accorciano
+  (`HangingSystem.reel`) e, poiché resistono solo alla trazione, l'oggetto sale da solo
+  fino alla passerella. La camera lo inquadra (`FollowCamera.focus`).
+- **Lasciar andare.** Le funi si tagliano. L'oggetto viene appeso a un perno nel suo punto,
+  così ruota su se stesso mentre cade, e la camera lo segue un attimo. Il suo peso sparisce
+  dalla rete, che accanto alla passerella risale di circa 7–9 cm (i frammenti pesano 300).
+- **Lasciare appeso.** La fune riscende. Si può tornare in qualsiasi momento e cambiare idea:
+  nessuna scelta blocca la storia.
+- **I tre frammenti della passerella:**
+  - la lampada (colonna 9, fila 8);
+  - l'otre (colonna 9, fila 15);
+  - gli anelli (colonne 15–16, fila 19).
+- **La porta del legno grigio.** La capacità delle funi vecchie cresce con ogni frammento
+  lasciato andare: 120 → 155 → 190 → 225. Prima del terzo:
+  - il viaggiatore si rifiuta di proseguire e torna indietro da solo;
+  - il danno delle funi vecchie è limitato al 50%, così un tentativo anticipato non può
+    rompere la rete e bloccare la storia.
+
+  Al terzo frammento la porta si apre, le funi vecchie "riposano" (danno azzerato) e da lì
+  vale la fisica vera: camminare va bene, fermarsi no.

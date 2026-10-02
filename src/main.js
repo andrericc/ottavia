@@ -81,7 +81,7 @@ const narrator = new Narrator();
 const journal = new Journal(narrator);
 const interactions = new InteractionManager(scene, player, narrator);
 journal.onToggle = (open) => { interactions.blocked = open; player.frozen = open || interactions.running; };
-const story = new Story({ narrator, journal, interactions, player, hanging, debris, notePost });
+const story = new Story({ narrator, journal, interactions, player, hanging, debris, notePost, net, camera: followCam });
 // apertura (aggiungi ?skip all'indirizzo per saltarla mentre sviluppate)
 if (!new URLSearchParams(location.search).has('skip')) story.intro();
 
