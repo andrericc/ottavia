@@ -177,11 +177,19 @@ export class Walkway {
     return (this.net.pos[ka] + this.net.pos[kb]) / 2;
   }
 
-  // Estremi in X di una traversina (con la sporgenza)
+  // Estremi in X di una traversina (con la sporgenza), dalla posizione VERA dei suoi nodi:
+  // quando il vento fa ondeggiare la rete di lato, le assi si spostano davvero
   plankXRange(p) {
-    const s = this.net.spacing;
-    return [this.net.x0 + p.i0 * s - this.overhang, this.net.x0 + p.i1 * s + this.overhang];
+    const xa = this.net.pos[this.net.index(p.i0, p.row) * 3];
+    const xb = this.net.pos[this.net.index(p.i1, p.row) * 3];
+    return [Math.min(xa, xb) - this.overhang, Math.max(xa, xb) + this.overhang];
   }
+
+  // Centro in X di una traversina (per portarsi dietro chi ci sta sopra)
+  plankX(p) {
+    return (this.net.pos[this.net.index(p.i0, p.row) * 3] + this.net.pos[this.net.index(p.i1, p.row) * 3]) / 2;
+  }
+
 
   // Il piede in (x, z) poggia su una traversina? Restituisce la traversina o null.
   // 'current' è l'asse su cui si trova già: le diamo un po' di margine in più

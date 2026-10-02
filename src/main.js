@@ -20,6 +20,8 @@ import { Narrator } from './ui/Narrator.js';
 import { Journal } from './ui/Journal.js';
 import { InteractionManager } from './interaction/InteractionManager.js';
 import { Story } from './story/Story.js';
+import { Wind } from './world/Wind.js';
+import { TEXTS } from './story/texts.js';
 import './ui/style.css';
 import { FollowCamera } from './player/FollowCamera.js';
 
@@ -82,6 +84,12 @@ const journal = new Journal(narrator);
 const interactions = new InteractionManager(scene, player, narrator);
 journal.onToggle = (open) => { interactions.blocked = open; player.frozen = open || interactions.running; };
 const story = new Story({ narrator, journal, interactions, player, hanging, debris, notePost, net, camera: followCam });
+// Raffiche di vento: solo quando si cammina sulla rete e nessun testo è aperto
+const wind = new Wind({
+  net, player, narrator, texts: TEXTS.thoughts,
+  isActive: () => player.state === 'walk' && player.position.z > 1 && player.position.z < netLength - 1 &&
+    !narrator.busy && !interactions.running && !journal.isOpen,
+});
 // apertura (aggiungi ?skip all'indirizzo per saltarla mentre sviluppate)
 if (!new URLSearchParams(location.search).has('skip')) story.intro();
 
@@ -94,6 +102,7 @@ addEventListener('keydown', (e) => {
   hanging.reset();
   player.reset(START);
   story.reset();
+  wind.reset();
 });
 
 // Quando una fune si spezza: scossone della camera e traversine che si staccano
@@ -109,7 +118,7 @@ function handleNetEvents() {
 }
 
 // Utile per il debug: nella console del browser puoi scrivere ottavia.player.state
-window.ottavia = { net, player, walkway, debris, followCam, hanging, narrator, journal, interactions, story };
+window.ottavia = { net, player, walkway, debris, followCam, hanging, narrator, journal, interactions, story, wind };
 
 // --- HUD
 const tensionEl = document.getElementById('tension');
@@ -133,6 +142,7 @@ function frame(now) {
   while (accumulator >= FIXED_DT) {
     player.applyToNet();
     hanging.applyLoads();
+    wind.applyToNet();
     net.step(FIXED_DT);
     hanging.step(FIXED_DT);
     accumulator -= FIXED_DT;
@@ -142,11 +152,12 @@ function frame(now) {
   netMesh.update(now / 1000);
   walkway.update();
   debris.update(dt);
+  wind.update(dt);
   hanging.update(dt, now / 1000);
   player.postPhysics();
   notePost.update(dt);
   interactions.update(dt);
-  story.update();
+  story.update(dt);
   followCam.update(dt, player.position);
   tensionEl.textContent = Math.round(netMesh.tension * 100) + '%';
   hudEl.style.opacity = narrator.busy || journal.isOpen ? 0 : 1; // mentre si legge, l'HUD si fa da parte

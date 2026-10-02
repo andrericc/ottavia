@@ -59,6 +59,9 @@ export class Player {
     this.hangMoving = false;
     this.frozen = false;      // true mentre si legge un testo o si sceglie
     this.action = null;       // gesto in corso durante un'interazione: 'pull' | 'hold' | null
+    this.windPush = 0;        // spinta laterale del vento (m/s), la imposta world/Wind.js
+    this.windLean = 0;        // forza del vento con segno (-1..1), per l'animazione
+    this.landed = false;      // true nel frame in cui atterra da un salto (lo legge la storia)
 
     // Input: 'keys' = tasti tenuti premuti, 'pressed' = premuti in questo frame
     this.keys = new Set();
@@ -124,6 +127,9 @@ export class Player {
     v.y += this.gravity * dt;
     p.addScaledVector(v, dt);
 
+    // Il vento spinge di lato: chi cammina viene spostato, chi sta fermo su un'asse resiste
+    if (this.windPush && this.onGround) p.x += this.windPush * (move ? 1 : 0.06) * dt;
+
     // Su cosa poggio? roccia della cresta, traversina, o solo funi (intervallo)
     const crest = this.world.groundHeightAt(p.x, p.z);
     const netH = crest === null ? this.net.heightAt(p.x, p.z) : null;
@@ -134,7 +140,10 @@ export class Player {
     else if (plank) surf = this.walkway.plankTopAt(plank, p.x, p.z); // piedi sul piano dell'asse
     else if (netOk) surf = netH;                                     // piedi sulle funi
 
-    if (plank !== this.plank) this.plankZPrev = plank ? this.walkway.plankZ(plank) : null;
+    if (plank !== this.plank) {
+      this.plankZPrev = plank ? this.walkway.plankZ(plank) : null;
+      this.plankXPrev = plank ? this.walkway.plankX(plank) : null;
+    }
     this.plank = plank;
     const wasOnGround = this.onGround;
 
@@ -155,7 +164,7 @@ export class Player {
     const snap = wasOnGround ? 0.4 : 0.05;
     this.onGround = false;
     if (surf !== null && p.y <= surf + snap && v.y <= 0) {
-      if (!wasOnGround) this.impact = 2000 + Math.min(-v.y, 12) * 400; // atterrare colpisce la rete
+      if (!wasOnGround) { this.impact = 2000 + Math.min(-v.y, 12) * 400; this.landed = true; } // atterrare colpisce la rete
       p.y = surf;
       v.y = 0;
       this.onGround = true;
@@ -337,10 +346,11 @@ export class Player {
     if (this.state === 'walk' && this.onGround) {
       if (this.world.groundHeightAt(p.x, p.z) !== null) return;
       if (this.plank) {
-        // l'asse mi trascina con sé (attrito): seguo il suo spostamento in Z
-        const z = this.walkway.plankZ(this.plank);
+        // l'asse mi trascina con sé (attrito): seguo il suo spostamento in Z e in X
+        const z = this.walkway.plankZ(this.plank), x = this.walkway.plankX(this.plank);
         if (this.plankZPrev !== null) p.z += z - this.plankZPrev;
-        this.plankZPrev = z;
+        if (this.plankXPrev != null) p.x += x - this.plankXPrev;
+        this.plankZPrev = z; this.plankXPrev = x;
         p.y = this.walkway.plankTopAt(this.plank, p.x, p.z);
       } else if (!this.stridePlank && this.net.cellIntact(p.x, p.z)) {
         const h = this.net.heightAt(p.x, p.z);
@@ -392,6 +402,7 @@ export class Player {
       hangSpeed: this.hangMoving ? this.hangSpeed : 0,
       facing: this.facing,
       action: this.action,
+      wind: this.windLean,
     });
   }
 
@@ -405,6 +416,7 @@ export class Player {
     if (this.state === 'fall') return 'Below there is nothing for hundreds and hundreds of metres…';
     if (this.gapTimer > 0.12) return 'Mind the gaps!';
     if (this.state === 'walk' && this.net.straining) return 'The net is giving way! Keep moving!';
+    if (this.state === 'walk' && Math.abs(this.windLean) > 0.4) return 'Wind! Stand still on a plank.';
     if (this.state === 'walk' && this.plank && this.plank.worn) return 'Grey wood. Do not stop here.';
     return '';
   }

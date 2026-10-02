@@ -74,6 +74,7 @@ export class TravelerAnimator {
     let rate = 18;
     if (ctx.state === 'walk') {
       if (ctx.onGround) { this.poseGround(dt, ctx); rate = 22; } else this.poseAir(ctx);
+      if (ctx.onGround && ctx.wind) this.poseWind(ctx.wind);
       if (ctx.action === 'pull') { this.posePull(); rate = 16; }
       else if (ctx.action === 'hold') { this.poseHold(); rate = 10; }
       if (ctx.wobble > 0) this.poseWobble(ctx.wobble);
@@ -158,6 +159,17 @@ export class TravelerAnimator {
       0);
     // la testa compensa la torsione del busto: lo sguardo resta dritto
     this.add('head', 0, 0.2 * w * Math.sin(p) * 0.6, 0);
+  }
+
+  // --- VENTO: si piega verso il vento, braccia un po' larghe, ginocchia flesse ---
+  // wind ha il segno della direzione nel mondo (+X / -X): la porto nel sistema del corpo
+  poseWind(wind) {
+    const side = wind * Math.cos(this.yaw); // componente lungo il fianco del viaggiatore
+    const a = Math.abs(wind);
+    this.add('spine', 0.1 * a, 0, 0.3 * side);
+    this.add('head', 0, 0, -0.15 * side);
+    this.add('shoulderL', 0, 0, -0.5 * a); this.add('shoulderR', 0, 0, 0.5 * a);
+    this.add('kneeL', 0.3 * a); this.add('kneeR', 0.3 * a);
   }
 
   // --- TIRARE SU UNA FUNE: chino, le braccia si alternano mano dopo mano ---

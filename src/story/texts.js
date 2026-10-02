@@ -22,7 +22,8 @@ export const TEXTS = {
       title: 'A note on a post',
       pages: [
         'TRAVELLER. Walk on the planks, not between them. Do not stop where the wood is grey. If the net sings under you, keep moving.',
-        'Everything hanging below belongs to someone. You may listen to it. — K.',
+        'Everything hanging below belongs to someone. You may listen to it.',
+        'Not everything down there is a memory. Most of it is only the city: water, figs, ferns. Three things were left by travellers who had to cross: a lamp that still burns, though nobody tends it; water tied with a red cord; two rings for one child. And one song, in the lowest house. — K.',
       ],
     },
     keeperHouse: {
@@ -84,7 +85,21 @@ export const TEXTS = {
     },
   },
 
+  // Oggetti che si possono tirare su ma non sono ricordi: una riga e la fune riscende
+  decoys: {
+    'skin-a': 'Water, and the smell of old rope. Nobody\'s memory.',
+    'skin-b': 'Rainwater. Ottavia collects it. It remembers nothing.',
+    'basket-a': 'Dried figs and a wooden spoon. Somebody\'s lunch, not somebody\'s past.',
+    'fern': 'Only a fern, thirsty and patient. It belongs to the net, not to a traveller.',
+    'lamp-b': 'A lamp nobody has lit for years. The wax is cold.',
+    'lamp-c': 'Another cold lamp. Whoever lit it took the flame with them.',
+  },
+
   thoughts: {
+    lampFar: 'It is too far to reach. But the net moves when I jump. Maybe it can move the lamp.',
+    lampReach: 'Now!',
+    windRising: 'The wind is rising.',
+    windHold: 'Stand still. Hold on.',
     greyWoodFirst: 'The net won\'t hold me. Not like this. Not with everything it is already carrying.',
     greyWoodAgain: 'Not yet. Not with everything it is still carrying.',
     ropeBelow: 'Something hangs down there. I could pull it up.',
@@ -106,7 +121,7 @@ export const TEXTS = {
   },
 
   ui: {
-    prompts: { read: 'Read', examine: 'Examine', pull: 'Pull up the rope', pullAgain: 'Pull it up again', lever: 'Pull the lever' },
+    prompts: { read: 'Read', examine: 'Examine', pull: 'Pull up the rope', pullAgain: 'Pull it up again', catch: 'Catch the lamp', lever: 'Pull the lever' },
     choices: { letGo: 'Let it go', keep: 'Leave it hanging' },
     journalTitle: 'Journal',
     journalSub: 'What Ottavia has told me',

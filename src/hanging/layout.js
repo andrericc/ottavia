@@ -20,39 +20,46 @@ export function populateOttavia(system, net) {
     return it;
   };
 
-  // --- I FRAMMENTI DELLA STORIA, appesi accanto alla passerella (colonne 9 e 15).
-  // Pesano molto (i ricordi pesano): quando li lasci andare la rete risale di ~9 cm.
-  put(chandelier, { i: 9, j: 8, length: 2.5, id: 'lamp', weight: 300 });  // 1 · The Cartographer's Lamp
-  put(waterskin, { i: 9, j: 15, length: 1.4, id: 'water', weight: 300 }); // 2 · The Last Water
-  put(rings, { i: 15, j: 19, length: 1.6, id: 'rings', weight: 300 });    // 3 · The Second Ring
+  // --- I FRAMMENTI DELLA STORIA. Pesano molto (i ricordi pesano): quando li lasci
+  // andare la rete risale di ~9 cm. Ognuno ha un dettaglio che lo distingue (vedi texts.js).
+  // 1 · The Cartographer's Lamp: l'unica accesa, lontana dalla passerella (colonna 6) su
+  //     una fune lunga 4 m: va fatta oscillare saltando a tempo (Story.js). Poco smorzata.
+  put(chandelier, { i: 6, j: 8, length: 4, id: 'lamp', weight: 300, damping: 0.9993 });
+  // 2 · The Last Water: l'unico otre con il cordino rosso
+  put(waterskin, { i: 9, j: 15, length: 1.4, id: 'water', weight: 300, cord: '#b3302a' });
+  // 3 · The Second Ring: l'unico gioco per bambini
+  put(rings, { i: 15, j: 19, length: 1.6, id: 'rings', weight: 300 });
+
+  // --- OGGETTI CHE SI POSSONO TIRARE SU MA NON SONO RICORDI (riga breve in texts.js)
+  put(waterskin, { i: 9, j: 5, length: 1.2, id: 'skin-a' });
+  put(waterskin, { i: 15, j: 6, length: 1.6, id: 'skin-b' });
+  put(basket, { i: 16, j: 10, length: 2.0, id: 'basket-a' });
+  put(plantPot, { i: 9, j: 13, length: 1.0, seed: 2, id: 'fern' });
+  put(chandelier, { i: 9, j: 11, length: 2.0, lit: false, id: 'lamp-c' });
+  put(chandelier, { i: 16, j: 16, length: 3.0, lit: false, id: 'lamp-b' });
 
   // Case fatte a sacco, ai due lati della città
   put(sackHouse, { i: 2, j: 13, drop: 1.4, yaw: Math.PI / 2, seed: 3 });
   put(sackHouse, { i: 20, j: 25, drop: 1.0, yaw: -Math.PI / 2, seed: 7 });
   put(sackHouse, { i: 4, j: 29, drop: 1.8, yaw: Math.PI / 2 + 0.4, seed: 11 });
 
-  // Lampadari (contengono una luce vera: non esagerare, ogni luce costa)
-  put(chandelier, { i: 16, j: 16, length: 3.0 });
-  put(chandelier, { i: 8, j: 31, length: 2.8 });
+  // Lampadari spenti (solo quello della Cartografa è acceso e fa luce)
+  put(chandelier, { i: 8, j: 31, length: 2.8, lit: false });
 
   // Otri d'acqua
-  put(waterskin, { i: 9, j: 5, length: 1.2 });
-  put(waterskin, { i: 15, j: 6, length: 1.6 });
   put(waterskin, { i: 17, j: 27, length: 1.4 });
   put(waterskin, { i: 6, j: 19, length: 1.0 });
   put(waterskin, { i: 15, j: 35, length: 1.1 });
 
   // Cesti appesi a spaghi
-  put(basket, { i: 16, j: 10, length: 2.0 });
   put(basket, { i: 8, j: 24, length: 1.8 });
 
   // Vasi con piante dal fogliame pendulo
   put(plantPot, { i: 15, j: 30, length: 1.2, seed: 1 });
-  put(plantPot, { i: 9, j: 13, length: 1.0, seed: 2 });
   put(plantPot, { i: 18, j: 20, length: 1.5, seed: 3 });
 
   // Amache
-  put(hammock, { i1: 6, j1: 9, i2: 6, j2: 12 });
+  put(hammock, { i1: 5, j1: 10, i2: 5, j2: 13 });
   put(hammock, { i1: 18, j1: 32, i2: 18, j2: 35 });
 
   // Trapezio (gli anelli sono il frammento 3, in alto)

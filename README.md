@@ -190,3 +190,32 @@ un trapezio, gli anelli e una scala di corda.
 
   Al terzo frammento la porta si apre, le funi vecchie "riposano" (danno azzerato) e da lì
   vale la fisica vera: camminare va bene, fermarsi no.
+
+## Gli enigmi (step 8, seconda parte)
+
+- **Ricordi da riconoscere.** Si possono tirare su 9 oggetti, ma solo 3 sono ricordi (il
+  quarto, il carillon, arriva allo step 9). Gli altri danno una riga (`TEXTS.decoys`) e la fune
+  riscende. Gli indizi sono nella terza pagina del primo biglietto, e ogni ricordo ha un
+  dettaglio visibile:
+  - la lampada della Cartografa è l'unica accesa (gli altri lampadari hanno `lit: false`:
+    niente fiamme e niente luce, quindi costano anche meno);
+  - l'acqua del pozzo ha il cordino rosso (`cord`);
+  - gli anelli sono l'unico gioco per bambini.
+- **La lampada lontana.** È appesa alla colonna 6, a 4 m dalla passerella, con una fune di 4 m
+  poco smorzata (`damping: 0.9993`, periodo circa 4 s). Ogni atterraggio sulla passerella lì
+  vicino le dà una spinta di 1,3 m/s verso la passerella (`VerletBody.push`):
+  - saltare mentre viene verso di te aumenta l'oscillazione (risonanza, come un'altalena);
+  - saltare mentre si allontana la frena.
+
+  In simulazione: con i salti a tempo arriva a portata in circa 8 s, saltando di continuo non
+  ci arriva mai. A portata compare `[E] Catch the lamp`, con 0,7 s di tolleranza per il
+  riflesso. Afferrata, il perno della sua fune si sposta dal nodo lontano a quello accanto alla
+  passerella. Se la lasci appesa, il perno torna al suo posto e la lampada riprende a oscillare.
+- **Il vento** (`world/Wind.js`). Raffiche ogni 30–50 s, solo mentre si cammina sulla rete:
+  - 2 s di vento che sale (*The wind is rising*), poi 3,5 s di raffica (*Stand still. Hold on.*);
+  - la raffica spinge di lato la rete, gli oggetti appesi (`VerletBody.wind`) e il viaggiatore;
+  - chi cammina viene spostato verso gli intervalli, chi sta fermo resiste;
+  - il viaggiatore si piega verso il vento (`poseWind`).
+- **Le assi seguono la rete anche di lato.** I bordi delle traversine si calcolano dalla
+  posizione vera dei nodi (`plankXRange`), e il viaggiatore fermo viene trascinato dall'asse
+  su cui sta (`plankX`), così quando il vento fa ondeggiare la rete non si trova sospeso nel vuoto.

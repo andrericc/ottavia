@@ -13,8 +13,11 @@
 import * as THREE from 'three';
 
 export class VerletBody {
-  constructor({ damping = 0.99, gravity = -9.81, iterations = 12 } = {}) {
-    Object.assign(this, { damping, gravity, iterations });
+  // Il vento è uguale per tutti i corpi: lo imposta world/Wind.js (accelerazione in m/s²)
+  static wind = new THREE.Vector3();
+
+  constructor({ damping = 0.99, gravity = -9.81, iterations = 12, windScale = 1 } = {}) {
+    Object.assign(this, { damping, gravity, iterations, windScale });
     this.pos = [];    // THREE.Vector3 per ogni particella
     this.prev = [];
     this.pin = [];    // funzione () => Vector3, oppure null
@@ -52,13 +55,14 @@ export class VerletBody {
   step(dt) {
     const { pos, prev, pin } = this;
     const dt2 = dt * dt;
-    // 1) Verlet: inerzia + gravità (le particelle fissate seguono il loro punto)
+    const w = VerletBody.wind, ws = this.windScale;
+    // 1) Verlet: inerzia + gravità + vento (le particelle fissate seguono il loro punto)
     for (let i = 0; i < pos.length; i++) {
       if (pin[i]) { prev[i].copy(pos[i]); pos[i].copy(pin[i]()); continue; }
       const p = pos[i], q = prev[i];
       const vx = (p.x - q.x) * this.damping, vy = (p.y - q.y) * this.damping, vz = (p.z - q.z) * this.damping;
       q.copy(p);
-      p.x += vx; p.y += vy + this.gravity * dt2; p.z += vz;
+      p.x += vx + w.x * ws * dt2; p.y += vy + this.gravity * dt2; p.z += vz + w.z * ws * dt2;
     }
     // 2) vincoli
     for (let it = 0; it < this.iterations; it++) {
@@ -76,10 +80,21 @@ export class VerletBody {
     }
   }
 
+  // Una spinta: cambia di colpo la velocità delle particelle libere.
+  // In Verlet la velocità è (pos - prev), quindi basta spostare prev.
+  // weight(i) dice quanto ogni particella sente la spinta (es. di più in fondo alla fune)
+  push(dv, dt, weight = () => 1) {
+    for (let i = 0; i < this.pos.length; i++) {
+      if (this.pin[i]) continue;
+      this.prev[i].addScaledVector(dv, -dt * weight(i));
+    }
+  }
+
   // Fotografia della posizione iniziale, per ricominciare
-  save() { this.saved = this.pos.map((p) => p.clone()); }
+  save() { this.saved = this.pos.map((p) => p.clone()); this.savedPins = this.pin.slice(); }
   reset() {
     this.saved.forEach((p, i) => { this.pos[i].copy(p); this.prev[i].copy(p); });
+    this.savedPins.forEach((f, i) => { this.pin[i] = f; }); // anche i perni tornano al loro posto
   }
 }
 

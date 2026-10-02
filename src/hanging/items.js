@@ -73,8 +73,9 @@ function simpleRope(net, i, j, length, segments, bodyOpts) {
 // LAMPADARIO: ottone, sei candele, un anello che ruota piano.
 // Contiene una PointLight vera: illumina gli oggetti vicini.
 // ===============================================================
-export function chandelier(net, { i, j, length = 2.5, intensity = 6 }) {
-  const { body, idx, n } = simpleRope(net, i, j, length, 6, { damping: 0.995 });
+// lit = false: un lampadario spento da anni (niente fiamme e niente luce: costa anche meno)
+export function chandelier(net, { i, j, length = 2.5, intensity = 6, lit = true, damping = 0.995 }) {
+  const { body, idx, n } = simpleRope(net, i, j, length, 6, { damping });
 
   const root = new THREE.Group(); root.name = 'lampadario';
   const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.25, 6), MAT.brass);
@@ -95,18 +96,20 @@ export function chandelier(net, { i, j, length = 2.5, intensity = 6 }) {
     wax.position.y = 0.07;
     const flame = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.06, 6), MAT.flame);
     flame.position.y = 0.16;
-    candle.add(wax, flame); arm.add(bar, candle); ring.add(arm);
-    flames.push(flame);
+    candle.add(wax);
+    if (lit) { candle.add(flame); flames.push(flame); }
+    arm.add(bar, candle); ring.add(arm);
   }
-  const light = new THREE.PointLight('#ffb866', intensity, 12, 1.6);
-  light.position.y = -0.2;
-  root.add(rod, hub, ring, light);
+  root.add(rod, hub, ring);
+  const light = lit ? new THREE.PointLight('#ffb866', intensity, 12, 1.6) : null;
+  if (light) { light.position.y = -0.2; root.add(light); }
 
   return {
     name: 'lampadario', bodies: [body], loads: [{ node: n, weight: 40 }], object: root,
     update(dt, t) {
       const end = body.pos[idx[idx.length - 1]], before = body.pos[idx[idx.length - 2]];
       hangAlong(root, before, end);
+      if (!lit) return;
       ring.rotation.y += dt * 0.25;
       // fiammelle che tremolano: ognuna con una fase diversa
       flames.forEach((f, k) => { f.scale.y = 1 + 0.25 * Math.sin(t * 17 + k * 1.9) * Math.sin(t * 5.3 + k); });
@@ -118,10 +121,12 @@ export function chandelier(net, { i, j, length = 2.5, intensity = 6 }) {
 // ===============================================================
 // OTRE D'ACQUA: una sacca di cuoio che "ballonzola" (molla sulla scala).
 // ===============================================================
-export function waterskin(net, { i, j, length = 1.2 }) {
+// cord = colore del cordino al collo (il frammento ha un cordino rosso)
+export function waterskin(net, { i, j, length = 1.2, cord = null }) {
   const { body, idx, n } = simpleRope(net, i, j, length, 3);
   const root = new THREE.Group(); root.name = 'otre';
-  const knot = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.02, 5, 8), MAT.rope);
+  const cordMat = cord ? new THREE.MeshStandardMaterial({ color: cord, roughness: 0.8 }) : MAT.rope;
+  const knot = new THREE.Mesh(new THREE.TorusGeometry(0.055, cord ? 0.026 : 0.02, 5, 8), cordMat);
   knot.rotation.x = Math.PI / 2; knot.position.y = -0.05;
   const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.07, 0.14, 7), MAT.leather);
   neck.position.y = -0.12;
