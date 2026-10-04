@@ -25,6 +25,7 @@ export class Wind {
 
   reset() {
     this.state = 'calm';
+    this.forced = null;
     this.timer = 35;        // la prima raffica arriva dopo un po' che si è sulla rete
     this.t = 0;
     this.dir = 1;
@@ -34,8 +35,19 @@ export class Wind {
     this.apply();
   }
 
+  // La storia può imporre il vento: force(0.9, 1) = raffica forte verso +X; force(null) = torna libero
+  force(strength, dir = 1) {
+    this.forced = strength;
+    if (strength !== null) { this.dir = dir; this.state = 'calm'; this.timer = 30; }
+  }
+
   update(dt) {
     this.time += dt;
+    if (this.forced != null) {
+      this.strength += (this.forced - this.strength) * Math.min(1, dt * 1.5); // sale e cala con dolcezza
+      this.apply();
+      return;
+    }
     if (this.state === 'calm') {
       if (this.isActive()) this.timer -= dt; // il conto alla rovescia si ferma durante i dialoghi
       if (this.timer <= 0) {

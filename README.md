@@ -219,3 +219,69 @@ un trapezio, gli anelli e una scala di corda.
 - **Le assi seguono la rete anche di lato.** I bordi delle traversine si calcolano dalla
   posizione vera dei nodi (`plankXRange`), e il viaggiatore fermo viene trascinato dall'asse
   su cui sta (`plankX`), così quando il vento fa ondeggiare la rete non si trova sospeso nel vuoto.
+
+## Storia v2: le funi che rispondono
+
+La storia dei frammenti (step 7–8) è stata sostituita. Il percorso completo è nel documento
+della storia, scheda *Ottavia v2*. In breve: la passerella è strappata a metà, Polo pizzica le
+funi per farsi rispondere dalla città, scende tra le case, prende la teleferica, e nella raffica
+la città lo tira dall'altra parte a ritmo.
+
+- **Lo strappo** (`main.js`, `makeTear`). Le funi longitudinali tra la fila 21 e la 22 (colonne
+  8–16) sono spezzate e mancano le traversine 19–23. `restoreState` azzera le funi rotte, quindi
+  `makeTear` viene richiamata anche quando si preme R. La storia impedisce di camminare nel buco
+  (`TEAR_Z0`, `TEAR_Z1` in `Story.js`).
+- **Pizzicare** (`story/Pulse.js`, `story/Sound.js`).
+  - *L'onda sulla rete:* una visita in ampiezza (BFS) sul grafo nodi-funi dà la distanza in
+    "salti" di ogni nodo da quello pizzicato. A ogni frame la luce di un nodo è una gaussiana
+    centrata sul fronte dell'onda, `exp(-((d - fronte)/larghezza)²)`, che si spegne allontanandosi.
+    Le funi spezzate non conducono, quindi l'onda aggira lo strappo. Si disegna con una
+    `LineSegments` e dei `Points` sovrapposti alla rete, con blending additivo.
+  - *La luce in viaggio:* `pulse.send(percorso)` fa correre uno sprite luminoso (con una scia)
+    lungo un percorso di punti che possono muoversi (un ponticello, il cavo). Restituisce una
+    Promise, quindi la storia scrive `await pulse.send(...)`.
+  - *La nota:* sintesi Karplus-Strong. Un rumore entra in una linea di ritardo lunga un periodo
+    e a ogni giro viene mediato col campione vicino (passa-basso), proprio come una corda vera.
+    La frequenza dipende dall'allungamento della fune (`ropeFreq`) e viene arrotondata alla nota
+    più vicina di una scala pentatonica: la rete "canta" invece di stonare.
+- **Spostamenti guidati** (`Player.startScript` / `endScript`). Nello stato `script` la posizione
+  la decide la storia: `story.walk(percorso)` fa avanzare il viaggiatore a velocità costante lungo
+  una spezzata di funzioni-punto e lo gira nella direzione di marcia. L'animazione di camminata
+  è la stessa di sempre (le si passa `scriptSpeed`). I percorsi vengono dagli oggetti stessi:
+  - `ropeBridge.path()`: i punti medi delle assi;
+  - `sackHouse.through(a, b)`: da una porta all'altra passando per il centro della casa;
+  - `cableway.deckPath()`: sulla pedana, dal varco al punto dove si ferma la cabina.
+- **La cabina** (`cableway.control`). Con `manual = true` la sua posizione lungo il cavo
+  (`control.u`, da 0 = stazione A a 1 = stazione B) la decide la storia, con interpolazioni
+  dolci (`story.tween`). Il pendolo della cabina reagisce da solo alle accelerazioni e al vento.
+- **Il battito.** Le luci partono a turno dalle case (`house.centerPoint`) e arrivano al carrello
+  della cabina in 1,25 s. Un tasto E premuto tra 0,32 s prima e 0,38 s dopo l'arrivo conta come
+  colpo riuscito: nota sempre più acuta e la cabina avanza. Ne servono 6 (`HITS_NEEDED`). Se si
+  sbaglia non succede niente di grave: arriva la luce successiva.
+- **Il vento imposto** (`wind.force(forza, direzione)`). Durante la traversata la raffica la
+  decide la storia; `force(null)` restituisce il vento al suo ciclo normale.
+- **Il finale.** Arrivati sulla cresta opposta, un'onda attraversa tutta la rete, ogni casa manda
+  una luce al viaggiatore con la sua nota, poi compare il cartello conclusivo.
+
+## La cornice: il sogno con Kublai Khan
+
+- **Apertura** (`Story.intro`): la citazione di Calvino, poi Marco Polo e Kublai Khan parlano in
+  un luogo fuori dal tempo (`world/Dream.js`). Quando Polo dice "Ottavia", il sogno si dissolve e
+  al suo posto c'è la città, con la stessa inquadratura. Il viaggiatore parte da una conca sulle
+  colline (`world.startPoint`): un dosso morbido (in `heightAt`, `World.js`) nasconde il burrone,
+  che si scopre superandolo. Con `?skip` si salta tutto e si parte accanto alla rete.
+- **Il sogno** è una scena separata, con il suo cielo e la sua nebbia: un pavimento a scacchiera
+  che sfuma nella nebbia, archi sospesi che galleggiano, granelli di luce, due bracieri e
+  Kublai Khan. Kublai è un modello gerarchico seduto (busto → testa → cappello, spalle → braccia
+  → avambracci); quando parla (`speaking`) alza il braccio destro e accompagna le parole.
+  Tutto il sogno sta in un gruppo che si posa dove si trova il viaggiatore (`setAnchor`).
+- **La dissolvenza** (`world/Transition.js`): le due scene vengono disegnate in due render target
+  (immagini fuori schermo) e fuse da uno shader su un rettangolo a tutto schermo. Un rumore liscio
+  decide quali pixel cambiano prima, e un bordo caldo segue il fronte. `view.mode` in `main.js`
+  sceglie cosa disegnare: `'dream'`, `'world'` oppure `'blend'` (con `view.t` da 0 a 1). Il
+  viaggiatore compare in tutte e due le scene: viene spostato dall'una all'altra prima di ogni disegno.
+- **Finale**: dopo il cartello su Ottavia si torna nel sogno con la dissolvenza al contrario, il
+  Khan chiede un'altra città e compare "To be continued".
+- **La cabina** è stata ingrandita (2,2 m di altezza interna, 1,5 × 1,9 m) e ha un varco a ogni
+  testata. Le stazioni sono state rialzate (`H = 2.9`), così il pavimento della cabina arriva a filo
+  della pedana.

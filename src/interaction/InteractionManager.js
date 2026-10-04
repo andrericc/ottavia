@@ -63,7 +63,7 @@ export class InteractionManager {
     try {
       await it.onInteract();
     } finally {
-      this.player.frozen = false;
+      if (this.player.state !== 'script') this.player.frozen = false;
       this.running = false;
       this.cooldown = 0.6;
     }
@@ -74,7 +74,8 @@ export class InteractionManager {
     this.cooldown = Math.max(0, this.cooldown - dt);
     const p = this.player;
     // si interagisce solo stando in piedi, e non durante un'altra interazione
-    if (this.running || this.narrator.busy || this.blocked || p.state !== 'walk' || !p.onGround) { this.hide(); return; }
+    const standing = (p.state === 'walk' && p.onGround) || (p.state === 'script' && !p.scriptMoving);
+    if (this.running || this.narrator.busy || this.blocked || !standing) { this.hide(); return; }
 
     const forward = new THREE.Vector3(Math.sin(p.facing), 0, Math.cos(p.facing));
     const _d = new THREE.Vector3();

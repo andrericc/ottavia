@@ -8,6 +8,7 @@
 //   hang  ── Spazio sotto una traversina ──────────►  climb ──► walk
 //   hang  ── la presa si esaurisce ────────────────►  fall
 //   fall  ── cade nel vuoto ───────────────────────►  riparte dall'ultimo punto sicuro
+//   script ── la storia lo muove lei (ponticelli, cabina) ──► walk (endScript)
 //
 // "Si cammina sulle traversine di legno, attenti a non mettere il piede
 //  negli intervalli, o ci si aggrappa alle maglie di canapa." (Calvino)
@@ -87,6 +88,7 @@ export class Player {
     else if (this.state === 'hang') this.updateHang(dt, move);
     else if (this.state === 'climb') this.updateClimb(dt);
     else if (this.state === 'fall') this.updateFall(dt);
+    // 'script': la posizione la decide la storia (spostamenti guidati, cabina)
 
     this.updateMesh(dt);
     this.pressed.clear();
@@ -318,6 +320,26 @@ export class Player {
     if (this.fallTime > 2.2) this.respawn();
   }
 
+  // --- SCRIPT: spostamenti guidati dalla storia ------------------
+  startScript() {
+    this.state = 'script';
+    this.velocity.set(0, 0, 0);
+    this.onGround = true;
+    this.plank = null; this.stridePlank = null;
+    this.scriptSpeed = 0;
+  }
+
+  // Torna a camminare da solo, posato in 'at' (es. su una traversina)
+  endScript(at) {
+    this.state = 'walk';
+    this.position.copy(at);
+    this.lastSafe.copy(at);
+    this.velocity.set(0, 0, 0);
+    this.onGround = true;
+    this.plank = null; this.plankZPrev = null; this.plankXPrev = null;
+    this.scriptSpeed = 0;
+  }
+
   // Ricomincia dall'inizio (tasto R)
   reset(start) {
     this.lastSafe.copy(start);
@@ -392,9 +414,9 @@ export class Player {
   updateMesh(dt) {
     this.object.position.copy(this.position);
     this.animator.update(dt, {
-      state: this.state,
+      state: this.state === 'script' ? 'walk' : this.state,
       onGround: this.onGround,
-      speed: this.state === 'walk' ? Math.hypot(this.velocity.x, this.velocity.z) : 0,
+      speed: this.state === 'walk' ? Math.hypot(this.velocity.x, this.velocity.z) : this.state === 'script' ? this.scriptSpeed : 0,
       vy: this.velocity.y,
       wobble: Math.min(1, this.gapTimer / this.gapLimit),
       climbT: this.climb ? this.climb.t : 0,
