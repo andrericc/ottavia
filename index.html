@@ -7,6 +7,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+    <!-- interfaccia narrativa -->
+    <link rel="stylesheet" href="./src/ui/style.css" />
+    <!-- Three.js è incluso nel repository (libs/three): l'import map dice al browser
+         dove trovare il modulo 'three', così il progetto gira senza build. -->
+    <script type="importmap">
+      { "imports": { "three": "./libs/three/three.module.js" } }
+    </script>
     <style>
       html, body { margin: 0; height: 100%; overflow: hidden; background: #0e1116; }
       canvas { display: block; }
@@ -32,6 +39,6 @@
       Net tension: <span id="tension">0%</span>
     </div>
     <div id="hint"></div>
-    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="./src/main.js"></script>
   </body>
 </html>

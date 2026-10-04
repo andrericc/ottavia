@@ -19,6 +19,7 @@
 // usano onBeforeRender dei loro mesh, così non serve toccare main.js.
 // ---------------------------------------------------------------
 import * as THREE from 'three';
+import { rockNormal, grassNormal } from '../hanging/textures.js';
 
 // ---- rumore: value noise 2D liscio + fBm (somma di ottave) ----
 function makeNoise(seed = 1) {
@@ -125,7 +126,9 @@ export function buildWorld(scene, { netLength, netWidth }) {
     }
     geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
   };
-  const terrainMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 });
+  // colori per vertice + una normal map leggera ripetuta (gobbe dell'erba)
+  const grassN = grassNormal(); grassN.repeat.set(900 / 5, 450 / 5);
+  const terrainMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, normalMap: grassN, normalScale: new THREE.Vector2(0.4, 0.4) });
   const ridges = [];
   for (const north of [true, false]) {
     const SIZE_X = 900, DEPTH = 450, SX = 220, SZ = 120;
@@ -159,6 +162,8 @@ export function buildWorld(scene, { netLength, netWidth }) {
     const bulge = (nWall(x * 0.012, d * 0.012 + 4) - 0.5) * 6;              // grandi rientranze e sporgenze
     return 0.07 * d + k * (ribs + bulge);
   };
+  // rilievo della roccia: normal map ripetuta ogni 14 m (bozze e crepe lungo gli strati)
+  const rockN = rockNormal(); rockN.repeat.set(900 / 14, WALL_D / 14);
   for (const north of [true, false]) {
     const geo = new THREE.PlaneGeometry(900, WALL_D, 220, 36); // stessa suddivisione in x delle colline: i bordi combaciano
     const pos = geo.attributes.position, cols = new Float32Array(pos.count * 3), c = new THREE.Color();
@@ -182,7 +187,7 @@ export function buildWorld(scene, { netLength, netWidth }) {
     }
     geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
     geo.computeVertexNormals();
-    scene.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, side: THREE.DoubleSide })));
+    scene.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, side: THREE.DoubleSide, normalMap: rockN })));
   }
 
   // ---------------- FONDO: valle, fiume, alberi ----------------

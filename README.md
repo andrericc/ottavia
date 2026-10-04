@@ -3,20 +3,41 @@
 Progetto di Interactive Graphics (Sapienza, AI & Robotics).
 Esperienza narrativa 3D interattiva ispirata a *Le città invisibili* di Italo Calvino.
 
+**Versione online (GitHub Pages): https://andrericc.github.io/ottavia/**
+*(se il repository viene spostato su GitHub Classroom, aggiornare questo link)*
+
 ## Avvio
 
-Serve [Node.js](https://nodejs.org) (versione 18 o superiore).
+Il progetto **non ha bisogno di build**: Three.js è incluso nel repository (`libs/three/`)
+e `index.html` lo indica al browser con un'*import map*. Basta servire la cartella
+principale con un server statico qualsiasi (i moduli JavaScript non si aprono con `file://`):
+
+```bash
+python3 -m http.server 8000     # poi apri http://localhost:8000
+```
+
+Per lavorare con la ricarica automatica si può usare Vite (serve [Node.js](https://nodejs.org) 18+):
 
 ```bash
 npm install     # solo la prima volta
 npm run dev     # apre il progetto su http://localhost:5173
 ```
 
-Build per la pubblicazione (cartella `dist/`):
+**Pubblicazione:** a ogni push su `main` il workflow `.github/workflows/deploy.yml` pubblica
+la cartella principale così com'è su GitHub Pages (Settings → Pages → Source: *GitHub Actions*).
+In alternativa si può scegliere *Deploy from a branch → main / (root)*: funziona allo stesso modo.
 
-```bash
-npm run build
-```
+## Librerie, strumenti e risorse esterne
+
+| Cosa | Uso | Dove |
+|---|---|---|
+| [Three.js](https://threejs.org) r170 (licenza MIT) | rendering WebGL, scene, materiali, luci | `libs/three/three.module.js` (incluso) |
+| [Vite](https://vitejs.dev) | solo server di sviluppo con ricarica automatica (facoltativo) | `devDependencies` |
+| [Cormorant Garamond](https://fonts.google.com/specimen/Cormorant+Garamond) (Google Fonts, OFL) | carattere dei testi | caricato da Google Fonts |
+
+Nessun modello 3D, texture o animazione è importato da file: geometrie, texture e
+animazioni sono tutte generate nel codice. Non si usano motori fisici esterni
+(la fisica Verlet è scritta da noi) né tween.js (le interpolazioni sono in `Story.js`).
 
 ## Controlli
 
@@ -56,7 +77,7 @@ src/
 │   ├── HangingSystem.js  gestisce gli oggetti: pesi sulla rete, fisica, disegno delle funi
 │   ├── items.js          gli oggetti: lampadario, otre, cesto, vaso, amaca, trapezio…
 │   ├── layout.js         DOVE sta ogni oggetto (da modificare liberamente)
-│   └── textures.js       texture procedurali (tela a righe, sacco rattoppato)
+│   └── textures.js       texture procedurali: colore + normal + roughness (+ bump)
 └── world/
     ├── World.js          creste, burrone, luci, nebbia
     ├── NotePost.js       il palo con il biglietto del Knot-keeper
@@ -266,22 +287,44 @@ la città lo tira dall'altra parte a ritmo.
 ## La cornice: il sogno con Kublai Khan
 
 - **Apertura** (`Story.intro`): la citazione di Calvino, poi Marco Polo e Kublai Khan parlano in
-  un luogo fuori dal tempo (`world/Dream.js`). Quando Polo dice "Ottavia", il sogno si dissolve e
-  al suo posto c'è la città, con la stessa inquadratura. Il viaggiatore parte da una conca sulle
+  un luogo fuori dal tempo (`world/Dream.js`). Quando Polo dice "Ottavia", la nebbia del sogno si alza e
+  sotto c'è la città, con la stessa inquadratura. Il viaggiatore parte da una conca sulle
   colline (`world.startPoint`): un dosso morbido (in `heightAt`, `World.js`) nasconde il burrone,
   che si scopre superandolo. Con `?skip` si salta tutto e si parte accanto alla rete.
 - **Il sogno** è una scena separata, con il suo cielo e la sua nebbia: un pavimento a scacchiera
-  che sfuma nella nebbia, archi sospesi che galleggiano, granelli di luce, due bracieri e
-  Kublai Khan. Kublai è un modello gerarchico seduto (busto → testa → cappello, spalle → braccia
+  che sfuma nella nebbia, due bracieri e Kublai Khan. Kublai è un modello gerarchico seduto (busto → testa → cappello, spalle → braccia
   → avambracci); quando parla (`speaking`) alza il braccio destro e accompagna le parole.
   Tutto il sogno sta in un gruppo che si posa dove si trova il viaggiatore (`setAnchor`).
-- **La dissolvenza** (`world/Transition.js`): le due scene vengono disegnate in due render target
-  (immagini fuori schermo) e fuse da uno shader su un rettangolo a tutto schermo. Un rumore liscio
-  decide quali pixel cambiano prima, e un bordo caldo segue il fronte. `view.mode` in `main.js`
-  sceglie cosa disegnare: `'dream'`, `'world'` oppure `'blend'` (con `view.t` da 0 a 1). Il
-  viaggiatore compare in tutte e due le scene: viene spostato dall'una all'altra prima di ogni disegno.
-- **Finale**: dopo il cartello su Ottavia si torna nel sogno con la dissolvenza al contrario, il
+- **La nebbia che si alza** (`world/Transition.js`): la scena visibile viene disegnata in un
+  render target (un'immagine fuori schermo) e ripassata su un rettangolo a tutto schermo con uno
+  shader di nebbia. Nella prima metà la nebbia color crema si infittisce a sbuffi (un rumore che
+  scorre verso l'alto) fino a coprire tutto; dietro di lei la scena cambia; nella seconda metà si
+  solleva dal basso verso l'alto e scopre Ottavia. `view.mode` in `main.js` sceglie cosa disegnare:
+  `'dream'`, `'world'` oppure `'blend'` (con `view.t` da 0 a 1). Il viaggiatore viene spostato
+  nella scena che si sta disegnando.
+- **Finale**: dopo il cartello su Ottavia si torna nel sogno con la nebbia al contrario, il
   Khan chiede un'altra città e compare "To be continued".
 - **La cabina** è stata ingrandita (2,2 m di altezza interna, 1,5 × 1,9 m) e ha un varco a ogni
   testata. Le stazioni sono state rialzate (`H = 2.9`), così il pavimento della cabina arriva a filo
   della pedana.
+
+## Texture di tipi diversi
+
+Tutte le texture sono generate nel codice (`src/hanging/textures.js`), ma di **tipi diversi**:
+
+| Tipo | Uso in three.js | Dove |
+|---|---|---|
+| **Colore** | `map` | legno, legno dipinto, juta delle case, tessuti, vestiti, insegne, acqua del fiume |
+| **Normal map** | `normalMap` | venature e chiodi del legno, trama e toppe della juta, scaglie di vernice, trama dei tessuti, roccia delle pareti (bozze e crepe), erba delle colline, graffi del ferro |
+| **Roughness map** (la "specular" dei materiali PBR) | `roughnessMap` | vernice più lucida del legno nudo, chiodi lucidi, ferro consumato lucido e ruggine opaca |
+| **Bump map** | `bumpMap` | trefoli a elica delle funi |
+| **Trasparenza** | canale alfa della `map` + `alphaTest` | sagome dei vestiti stesi |
+
+Come funziona: ogni generatore disegna la stessa immagine **tre volte** con gli stessi numeri
+casuali, una per livello (colore, altezza, ruvidezza), così le mappe combaciano pixel per pixel.
+L'immagine delle altezze diventa una normal map con l'**operatore di Sobel** (`heightToNormal`):
+la pendenza in x e in y di ogni pixel dà il vettore normale (−dx, −dy, 1), normalizzato e scritto
+nei canali RGB. Le mappe extra viaggiano attaccate alla texture colore e `applyDetailMaps(scene)`
+(chiamata in `main.js`) le monta su tutti i materiali che la usano. Le texture con gli stessi
+parametri si generano una volta sola (cache) e si clonano.
+

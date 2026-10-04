@@ -75,7 +75,7 @@ export class Story {
     await this.narrator.card(TEXTS.intro); if (!this.alive(tok)) return;
     await this.dialogue(TEXTS.dream); if (!this.alive(tok)) return;
     // "Its name is Ottavia." → il sogno si dissolve, resta la città
-    await this.dissolve(0, 1, 3.2); if (!this.alive(tok)) return;
+    await this.dissolve(0, 1, 4.5); if (!this.alive(tok)) return;
     p.frozen = false;
     this.think(TEXTS.thoughts.arrive, 3);
   }
@@ -89,7 +89,7 @@ export class Story {
     this.dream.kublai.speaking = false;
   }
 
-  // dissolvenza tra il sogno (0) e Ottavia (1), con la camera ferma
+  // passaggio nella nebbia tra il sogno (0) e Ottavia (1), con la camera ferma
   async dissolve(from, to, seconds) {
     this.view.mode = 'blend'; this.view.t = from;
     await this.tween(seconds, (e) => { this.view.t = from + (to - from) * e; });
@@ -364,7 +364,7 @@ export class Story {
     this.camera.goal = { yaw: p.facing + Math.PI - 0.5, pitch: 0.28, distance: 6.0 };
     this.dream.setAnchor(p.position, p.facing);
     await wait(1.5); if (!this.alive(tok)) return;
-    await this.dissolve(1, 0, 3.2); if (!this.alive(tok)) return;
+    await this.dissolve(1, 0, 4.5); if (!this.alive(tok)) return;
     await this.dialogue(TEXTS.dreamEnd); if (!this.alive(tok)) return;
     await this.narrator.card(TEXTS.toBeContinued);
     this.stage = 'done';

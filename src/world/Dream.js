@@ -5,8 +5,6 @@
 // volutamente semplice e fuori dal tempo:
 //   - un pavimento a scacchiera che sfuma nella nebbia chiara (nel libro il Khan
 //     riduce il suo impero a una scacchiera)
-//   - qualche arco sospeso nel vuoto, che galleggia piano
-//   - granelli di luce che salgono (Points)
 //   - Kublai Khan seduto su un basamento di cuscini, tra due bracieri
 //
 // Tutto sta in un gruppo 'anchor' che la storia posa dove si trova il viaggiatore
@@ -120,16 +118,6 @@ export class Dream {
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(48, 48), new THREE.MeshStandardMaterial({ map: checkerTexture(), transparent: true, roughness: 0.9, depthWrite: false }));
     floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0.002, 4); anchor.add(floor);
 
-    // archi sospesi
-    const stone = new THREE.MeshStandardMaterial({ color: '#d6c8b8', roughness: 0.9, flatShading: true });
-    this.arches = [];
-    for (const [x, y, z, ry, s] of [[-9, 2.5, 14, 0.5, 1.3], [8, 4, 18, -0.4, 1.6], [-4, 6, 26, 0.2, 2.0], [13, 1.5, 8, -1.1, 1.0], [-14, 3.5, 6, 1.2, 1.2]]) {
-      const a = new THREE.Group(); a.position.set(x, y, z); a.rotation.y = ry; a.scale.setScalar(s);
-      a.add(new THREE.Mesh(new THREE.TorusGeometry(1, 0.18, 6, 16, Math.PI), stone));
-      for (const sx of [-1, 1]) { const col = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.6, 0.36), stone); col.position.set(sx, -0.8, 0); a.add(col); }
-      anchor.add(a); this.arches.push({ a, y, ph: x * 0.3 });
-    }
-
     // Kublai, a 3,2 m davanti al viaggiatore, rivolto verso di lui
     this.kublai = makeKublai();
     this.kublai.root.position.set(0.5, 0, 3.4); this.kublai.root.rotation.y = Math.PI - 0.15; this.kublai.root.scale.setScalar(1.15);
@@ -149,12 +137,6 @@ export class Dream {
       this.flames.push(fl);
     }
 
-    // granelli di luce che salgono lentamente
-    const N = 160, pos = new Float32Array(N * 3);
-    for (let k = 0; k < N; k++) pos.set([(Math.random() - 0.5) * 30, Math.random() * 8, Math.random() * 30 - 6], k * 3);
-    const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    this.motes = new THREE.Points(pg, new THREE.PointsMaterial({ size: 0.12, map: glow(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, color: '#fff0d0' }));
-    anchor.add(this.motes);
     this.t = 0;
   }
 
@@ -167,10 +149,6 @@ export class Dream {
   update(dt) {
     this.t += dt;
     updateKublai(this.kublai, dt);
-    for (const { a, y, ph } of this.arches) { a.position.y = y + 0.3 * Math.sin(this.t * 0.4 + ph); a.rotation.z = 0.05 * Math.sin(this.t * 0.3 + ph); }
     this.flames.forEach((f, k) => f.scale.set(0.6 + 0.06 * Math.sin(this.t * 9 + k), 0.9 + 0.12 * Math.sin(this.t * 13 + k * 2), 1));
-    const p = this.motes.geometry.attributes.position;
-    for (let k = 0; k < p.count; k++) { let y = p.getY(k) + dt * 0.25; if (y > 8) y = 0; p.setY(k, y); }
-    p.needsUpdate = true;
   }
 }

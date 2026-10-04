@@ -14,15 +14,17 @@
 // ---------------------------------------------------------------
 import * as THREE from 'three';
 import { VerletBody, netPin, netPinBetween } from './VerletBody.js';
-import { stripedFabric, burlap, woodPlanks, paintedWood, canvasTexture } from './textures.js';
+import { stripedFabric, burlap, woodPlanks, paintedWood, canvasTexture, ropeBump, metalDetail } from './textures.js';
 
 const DOWN = new THREE.Vector3(0, -1, 0);
 const UP = new THREE.Vector3(0, 1, 0);
 const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _q = new THREE.Quaternion(), _m = new THREE.Matrix4();
 
+const ROPE_BUMP = ropeBump(); ROPE_BUMP.repeat.set(2, 24);
 const MAT = {
   brass: new THREE.MeshStandardMaterial({ color: '#b08d48', metalness: 0.7, roughness: 0.35 }),
-  iron: new THREE.MeshStandardMaterial({ color: '#3b3a38', metalness: 0.6, roughness: 0.5 }),
+  // ferro: roughnessMap (consumato = lucido, ruggine = opaco) + normalMap dei graffi
+  iron: new THREE.MeshStandardMaterial({ color: '#3b3a38', metalness: 0.6, roughness: 0.8, ...metalDetail() }),
   wax: new THREE.MeshStandardMaterial({ color: '#efe6cf', roughness: 0.8 }),
   flame: new THREE.MeshStandardMaterial({ color: '#ffd27a', emissive: '#ffae3d', emissiveIntensity: 2 }),
   leather: new THREE.MeshStandardMaterial({ color: '#7b5433', roughness: 0.75, flatShading: true }),
@@ -30,7 +32,8 @@ const MAT = {
   terracotta: new THREE.MeshStandardMaterial({ color: '#b5603c', roughness: 0.9, flatShading: true }),
   soil: new THREE.MeshStandardMaterial({ color: '#3d2b1f', roughness: 1 }),
   wood: new THREE.MeshStandardMaterial({ color: '#7a5a3a', roughness: 0.9 }),
-  rope: new THREE.MeshStandardMaterial({ color: '#8a7556', roughness: 1 }),
+  // fune: bumpMap con i trefoli avvolti a elica
+  rope: new THREE.MeshStandardMaterial({ color: '#8a7556', roughness: 1, bumpMap: ROPE_BUMP, bumpScale: 3 }),
   dark: new THREE.MeshStandardMaterial({ color: '#1b1510', roughness: 1 }),
   window: new THREE.MeshStandardMaterial({ color: '#ffd9a0', emissive: '#ffb45a', emissiveIntensity: 1.5 }),
 };

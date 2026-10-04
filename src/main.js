@@ -14,6 +14,7 @@ import { buildWorld } from './world/World.js';
 import { Debris } from './world/Debris.js';
 import { HangingSystem } from './hanging/HangingSystem.js';
 import { populateOttavia } from './hanging/layout.js';
+import { applyDetailMaps } from './hanging/textures.js';
 import { Player } from './player/Player.js';
 import { NotePost } from './world/NotePost.js';
 import { Narrator } from './ui/Narrator.js';
@@ -22,7 +23,6 @@ import { InteractionManager } from './interaction/InteractionManager.js';
 import { Story } from './story/Story.js';
 import { Wind } from './world/Wind.js';
 import { TEXTS } from './story/texts.js';
-import './ui/style.css';
 import { FollowCamera } from './player/FollowCamera.js';
 import { Dream } from './world/Dream.js';
 import { Transition } from './world/Transition.js';
@@ -71,6 +71,7 @@ scene.add(walkway.object);
 // --- Tutto ciò che sta appeso sotto la rete (lampadari, otri, case a sacco…)
 const hanging = new HangingSystem(scene, net);
 const route = populateOttavia(hanging, net); // il percorso della storia: case, ponticelli, teleferica
+applyDetailMaps(scene);                      // normal e roughness map su tutti i materiali con texture procedurali
 // rete e oggetti si assestano insieme (il peso degli oggetti abbassa un po' la rete)
 for (let i = 0; i < 480; i++) { hanging.applyLoads(); net.step(1 / 120); hanging.step(1 / 120); }
 net.saveState();
@@ -95,7 +96,7 @@ const journal = new Journal(narrator);
 const interactions = new InteractionManager(scene, player, narrator);
 journal.onToggle = (open) => { interactions.blocked = open; player.frozen = open || interactions.running; };
 // Il sogno (Marco Polo e Kublai Khan) e la dissolvenza verso Ottavia.
-// view.mode: 'world' = Ottavia · 'dream' = il sogno · 'blend' = dissolvenza (view.t: 0 sogno → 1 Ottavia)
+// view.mode: 'world' = Ottavia · 'dream' = il sogno · 'blend' = passaggio nella nebbia (view.t: 0 sogno → 1 Ottavia)
 const dream = new Dream();
 const transition = new Transition(renderer);
 const view = { mode: SKIP ? 'world' : 'dream', t: 0 };

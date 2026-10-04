@@ -11,6 +11,7 @@
 // disegnata N volte con matrici diverse (molto più veloce di N mesh).
 // ---------------------------------------------------------------
 import * as THREE from 'three';
+import { woodPlanks } from '../hanging/textures.js';
 
 export class Walkway {
   constructor(net, {
@@ -42,7 +43,10 @@ export class Walkway {
 
     // Mesh istanziata
     const geo = new THREE.BoxGeometry(1, thickness, depth);
-    const mat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.9 });
+    // il colore viene da ogni istanza; dalla texture di legno prendo solo il RILIEVO
+    // (normalMap: venature e chiodi) e la LUCENTEZZA (roughnessMap)
+    const wood = woodPlanks(17, 1).userData.detail;
+    const mat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, normalMap: wood.normalMap, roughnessMap: wood.roughnessMap });
     this.object = new THREE.InstancedMesh(geo, mat, this.planks.length);
     this.object.frustumCulled = false;
 
