@@ -41,8 +41,8 @@ export const TEXTS = {
   arrive: ['Valdrada.', 'Down in the water the village is full of people. Up here, nobody.', '…and I am not there.'],
   hintLantern: 'In the water, by the long house, a man keeps lighting a lantern. Up here, it is dark.',
   hintBell: 'Down there, the woman under the bell has started to ring it. I hear nothing.',
-  lantern: ['The lantern takes the flame.', 'Down in the water every window lights up. Up here, only mine.'],
-  bell: ['The bell rings over the lake.', 'In the water it stops. It makes no sound.'],
+  lantern: 'Down in the water every window lights up. Up here, only mine.',
+  bell: 'The bell rings. In the water it stops, without a sound.',
   feet: 'There are my feet, in the water.',
   half: 'Half of me, down there.',
   waiting: 'At the end of the pier, in the water, someone is holding out a hand.',
@@ -179,8 +179,7 @@ export class ValdradaStory {
         this.windowsLit = true;
         this.lanternMan.action = null; this.lanternMan.facing = Math.atan2(p.position.x - this.lanternMan.t.root.position.x, p.position.z - this.lanternMan.t.root.position.z);
         this.done.lantern = true;
-        this.narrator.thought(TEXTS.lantern[0], 3); await wait(3.2);
-        this.narrator.thought(TEXTS.lantern[1], 4.5); await wait(4.8);
+        this.narrator.thought(TEXTS.lantern, 4.5); await wait(4.8);
         await this.gain();
         // subito dopo, nel lago la donna sotto il campanile comincia a suonare (senza suono)
         this.bellWoman.action = 'ring'; this.bellWoman.facing = Math.PI;
@@ -242,8 +241,7 @@ export class ValdradaStory {
         this.bellWoman.action = null;
         this.bellWoman.facing = Math.atan2(p.position.x - this.bellWoman.t.root.position.x, p.position.z - this.bellWoman.t.root.position.z + 0.01);
         this.done.bell = true;
-        this.narrator.thought(TEXTS.bell[0], 3); await wait(3.2);
-        this.narrator.thought(TEXTS.bell[1], 4.5); await wait(4.8);
+        this.narrator.thought(TEXTS.bell, 4.5); await wait(4.8);
         await this.gain();
       },
     });

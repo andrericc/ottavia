@@ -16,30 +16,19 @@ export const TEXTS = {
 
   // la cornice: Marco Polo e Kublai Khan, in un luogo fuori dal tempo (K = il Khan, P = Polo)
   dream: [
-    ['K', 'You have described many cities to me, Venetian. Tonight, tell me one that stands on nothing.'],
-    ['P', 'There is one, Sire. Between two steep mountains there is a chasm, and below it only air.'],
-    ['K', 'And yet people live there?'],
-    ['P', 'They tied the two mountains together with ropes and chains and little bridges, and hung their lives underneath.'],
-    ['K', 'Then it must be the most uncertain of all your cities.'],
-    ['P', 'Strangely, Sire, it is the least. They know the net will not last forever.'],
-    ['K', 'What is its name?'],
-    ['P', 'Its name is Ottavia.'],
+    ['K', 'Tell me a city, Venetian. One that stands on nothing.'],
+    ['P', 'Between two mountains there is only air. Its people tied the peaks together with ropes, and hung their lives underneath.'],
+    ['K', 'Then it is the most fragile of your cities.'],
+    ['P', 'The least, Sire. They know the net will not hold forever. Its name is Ottavia.'],
   ],
   dreamEnd: [
-    ['K', 'A city that holds because it knows it will fall. I am not sure I believe you.'],
-    ['P', 'Every city I describe to you, Sire, is held together by something. In Ottavia you can see the ropes.'],
-    ['K', 'Then tell me another.'],
+    ['K', 'A city that holds because it knows it will fall… Tell me another, Venetian.'],
   ],
   // dopo Ottavia, ancora nel sogno: Polo racconta la seconda città
   dreamValdrada: [
-    ['K', 'But not another city hanging over the void. Tonight I am tired of looking down.'],
-    ['P', 'Then look across, Sire. There is a city on the shore of a lake, its houses all verandas, one above the other.'],
-    ['K', 'A lake is only a lake.'],
-    ['P', 'Not this one. Whoever arrives sees two cities: one standing above the water, and one upside down beneath it.'],
-    ['K', 'A reflection. Every city on the water has one.'],
-    ['P', 'Here nothing happens above that the lake does not repeat below. Every gesture is made twice.'],
+    ['P', 'On the shore of a lake there is a village built to be reflected. Whoever arrives sees two cities: one above the water, one upside down.'],
     ['K', 'And the traveller? Does the lake repeat him too?'],
-    ['P', 'That, Sire, is what I went there to find out. Its name is Valdrada.'],
+    ['P', 'That is what I went to find out. Its name is Valdrada.'],
   ],
   // prima di Valdrada, come per Ottavia, una riga del libro
   valdradaIntro: [
@@ -48,12 +37,10 @@ export const TEXTS = {
   ],
   // dopo Valdrada: la cornice si chiude
   dreamFinal: [
-    ['K', 'So the lake gave you back to yourself piece by piece, Venetian. And then it kept you.'],
-    ['P', 'It kept someone, Sire. I am still not sure it was me.'],
-    ['K', 'Two cities that look at each other forever and do not love each other. Are you describing Valdrada, or my court?'],
-    ['P', 'Perhaps every city I tell you about is the same city, Sire. Ottavia hangs from what it cannot see. Valdrada lives for what it sees and cannot touch.'],
-    ['K', 'And you? In which of them do you live?'],
-    ['P', 'In the one I am about to describe, Sire. Always the next one.'],
+    ['K', 'So the lake gave you back to yourself, Venetian. And then it kept you.'],
+    ['P', 'Ottavia holds on to what it cannot see. Valdrada lives for what it sees and cannot touch.'],
+    ['K', 'And you? Where do you live?'],
+    ['P', 'Always in the next city, Sire.'],
   ],
   names: { K: 'Kublai Khan', P: 'Marco Polo' },
 
@@ -61,9 +48,7 @@ export const TEXTS = {
   note: {
     title: 'A note on a post',
     pages: [
-      'TRAVELLER. Walk on the planks, not between them.',
-      'Here we do not shout. We pluck the ropes, and listen. Everything in Ottavia is tied to something else: a pull here is felt over there.',
-      'If you cannot go on, ask the net. Someone will answer.',
+      'TRAVELLER. Walk on the planks. If you cannot go on, pluck a rope and listen: someone will answer.',
     ],
   },
 
@@ -94,24 +79,15 @@ export const TEXTS = {
   voices: {
     L1: {
       title: 'A voice from inside the house',
-      pages: [
-        'You plucked the rope by the tear. We all felt it, up and down the city.',
-        'Go through, go through. Mind the table. Nobody here crosses alone: when you walk on a bridge, someone holds the other end.',
-      ],
+      pages: ['We all felt your rope. Come through the house: nobody here crosses alone.'],
     },
     L2: {
       title: 'Another voice',
-      pages: [
-        'You are wondering why we do not mend the tear. We mend and mend. The net goes down a hand\'s breadth every winter all the same.',
-        'We know it will not hold forever. Strange: it makes life here less uncertain, not more. Take the cable. Pluck it when you are on the platform.',
-      ],
+      pages: ['The net sinks a little every winter. Knowing it will fall makes life here less uncertain. Take the cable.'],
     },
     R1: {
       title: 'A voice on the other side',
-      pages: [
-        'You felt it, out there in the wind? That was all of us, pulling.',
-        'Up the little bridge, and you are back on the walkway, past the tear. Go well. Pluck a rope when you are far away, now and then. We will hear it.',
-      ],
+      pages: ['That was all of us, pulling. Up the little bridge, and you are past the tear.'],
     },
   },
 
@@ -126,7 +102,6 @@ export const TEXTS = {
   },
 
   ending: [
-    'Behind me, the houses that answered keep their lights on. The ropes I walked still hum.',
     'Ottavia does not stand. It hangs, and it holds, because everything in it is tied to everything else.',
     '> «…la vita degli abitanti d\'una città così è meno incerta che in altre città.»',
     '— Italo Calvino, Le città invisibili',
