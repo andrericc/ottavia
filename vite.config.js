@@ -7,5 +7,7 @@ import { fileURLToPath } from 'node:url';
 // alias       → anche Vite usa la copia di Three.js inclusa nel repository
 export default defineConfig({
   base: './',
+  // due pagine: Ottavia (index.html) e, per ora a parte, Valdrada (valdrada.html)
+  build: { rollupOptions: { input: { main: fileURLToPath(new URL('./index.html', import.meta.url)), valdrada: fileURLToPath(new URL('./valdrada.html', import.meta.url)), case: fileURLToPath(new URL('./valdrada-case.html', import.meta.url)) } } },
   resolve: { alias: { three: fileURLToPath(new URL('./libs/three/three.module.js', import.meta.url)) } },
 });

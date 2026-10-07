@@ -26,6 +26,7 @@ import { TEXTS } from './story/texts.js';
 import { FollowCamera } from './player/FollowCamera.js';
 import { Dream } from './world/Dream.js';
 import { Transition } from './world/Transition.js';
+import { createValdrada, START_FACING as VALDRADA_FACING } from './valdrada/Valdrada.js';
 
 // --- Renderer, scena, camera
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -108,12 +109,82 @@ const wind = new Wind({
     !narrator.busy && !interactions.running && !journal.isOpen,
 });
 story.wind = wind;
+// ---------------------------------------------------------------
+// LA CORNICE COMPLETA, con l'ordine fisso:
+//   sogno → Ottavia → sogno → Valdrada → sogno → fine
+// Ottavia è la città di partenza (sopra). Finita Ottavia, Story.ending torna nel sogno
+// e chiama story.onFinished: qui il Khan chiede un'altra città, si costruisce Valdrada
+// e la nebbia porta là. Finita Valdrada (story.onEnd) si torna nel sogno per l'ultima volta.
+// Con ?valdrada nell'indirizzo (o aprendo valdrada.html) si salta Ottavia e si parte dal sogno
+// prima di Valdrada.
+// ---------------------------------------------------------------
+let city = 'ottavia';        // la città attiva: 'ottavia' | 'valdrada'
+let valdrada = null;         // costruita solo quando serve
+let playing = true;          // false mentre si è nel sogno o nella nebbia (solo per Valdrada)
+const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+
+// inquadratura del sogno: di tre quarti, sopra la spalla, il viaggiatore e il Khan insieme
+function dreamCamera(facing, pos) {
+  followCam.focusFn = null; followCam.goal = null;
+  followCam.yaw = facing + Math.PI - 0.5; followCam.pitch = 0.28; followCam.distance = 6.0;
+  followCam.target.copy(pos).add(new THREE.Vector3(0, 1.2, 0));
+}
+
+// passaggio nella nebbia con un'azione a metà, quando lo schermo è tutto coperto
+async function fog(from, to, atMiddle) {
+  view.mode = 'blend'; view.t = from;
+  const mid = 0.5;
+  await story.tween(2.25, (e) => { view.t = from + (mid - from) * e; });
+  atMiddle?.();
+  await story.tween(2.25, (e) => { view.t = mid + (to - mid) * e; });
+  view.mode = to >= 1 ? 'world' : 'dream';
+}
+
+async function toValdrada() {
+  playing = false;
+  interactions.hide();
+  // costruire la città richiede un attimo: lo facciamo mentre il sogno è fermo
+  await nextFrame();
+  valdrada = createValdrada({ renderer, camera, followCam, narrator });
+  city = 'valdrada';
+  scene.add(player.object);   // il viaggiatore di Ottavia torna nella sua scena (non resta nel sogno)
+  const vp = valdrada.player;
+  hudEl.innerHTML = '<b>WASD</b> move · <b>E</b> interact · <b>J</b> journal · <b>Mouse</b> (hold) camera · <b>Wheel</b> zoom · <b>R</b> restart';
+  // il sogno riappare intorno al viaggiatore, già in punta al pontile di Valdrada
+  dream.setAnchor(vp.position, VALDRADA_FACING);
+  dreamCamera(VALDRADA_FACING, vp.position);
+  view.mode = 'dream';
+  await story.dialogue(TEXTS.dreamValdrada);
+  await narrator.card(TEXTS.valdradaIntro);
+  // "Its name is Valdrada." → la nebbia sale e scopre il lago
+  await fog(0, 1, () => { valdrada.placeCamera(); followCam.target.copy(vp.position).add(new THREE.Vector3(0, 1.2, 0)); });
+  playing = true;
+  valdrada.story.onEnd = backToDream;
+  valdrada.story.start();
+}
+
+async function backToDream() {
+  playing = false;
+  const vp = valdrada.player;
+  await new Promise((r) => setTimeout(r, 1200));
+  dream.setAnchor(vp.position, vp.facing);
+  // a metà nebbia il viaggiatore torna com'era (a Valdrada era svanito): nel sogno c'è di nuovo Marco
+  await fog(1, 0, () => { valdrada.story.restoreTraveler(); dreamCamera(vp.facing, vp.position); });
+  await story.dialogue(TEXTS.dreamFinal);
+  await narrator.card(TEXTS.theEnd);
+}
+
+story.onFinished = toValdrada;
+
 // apertura (aggiungi ?skip all'indirizzo per saltarla mentre sviluppate)
-if (!SKIP) story.intro();
+// (anche valdrada.html parte così: Valdrada dal sogno, e alla fine di nuovo il sogno)
+if (new URLSearchParams(location.search).has('valdrada') || /valdrada\.html$/.test(location.pathname)) { view.mode = 'dream'; toValdrada(); }
+else if (!SKIP) story.intro();
 
 // R = ricomincia: rete integra, traversine al loro posto, viaggiatore sulla cresta
 addEventListener('keydown', (e) => {
   if (e.code !== 'KeyR') return;
+  if (city === 'valdrada') { if (playing) valdrada.reset(); return; }
   net.restoreState();
   makeTear();
   walkway.reset();
@@ -137,7 +208,8 @@ function handleNetEvents() {
 }
 
 // Utile per il debug: nella console del browser puoi scrivere ottavia.player.state
-window.ottavia = { net, player, walkway, debris, followCam, hanging, narrator, journal, interactions, story, wind, dream, view };
+window.ottavia = { net, player, walkway, debris, followCam, hanging, narrator, journal, interactions, story, wind, dream, view,
+  get city() { return city; }, get valdrada() { return valdrada; }, camera, renderer };
 
 // --- HUD
 const tensionEl = document.getElementById('tension');
@@ -151,10 +223,7 @@ const FIXED_DT = 1 / 120;
 let accumulator = 0;
 let last = performance.now();
 
-function frame(now) {
-  const dt = Math.min((now - last) / 1000, 0.1); // se la tab era in pausa non esplodiamo
-  last = now;
-
+function updateOttavia(dt, now) {
   player.update(dt, followCam.yaw);
 
   accumulator += dt;
@@ -178,20 +247,48 @@ function frame(now) {
   interactions.update(dt);
   story.update(dt);
   followCam.update(dt, player.position);
-  tensionEl.textContent = Math.round(netMesh.tension * 100) + '%';
+  if (tensionEl) tensionEl.textContent = Math.round(netMesh.tension * 100) + '%';
   hudEl.style.opacity = narrator.busy || journal.isOpen ? 0 : 1; // mentre si legge, l'HUD si fa da parte
-  const hint = narrator.busy ? '' : (story.hint || player.hint);
-  if (hint !== lastHint) { hintEl.innerHTML = hint; hintEl.style.display = hint ? 'block' : 'none'; lastHint = hint; }
+  showHint(narrator.busy ? '' : (story.hint || player.hint));
+}
 
+function updateValdrada(dt) {
+  const live = playing && view.mode === 'world';
+  valdrada.update(dt, live);
+  if (journal.isOpen) valdrada.player.frozen = true;
+  story.update(dt);   // la storia di Ottavia fa avanzare le transizioni (tween) della cornice
+  followCam.update(dt, valdrada.player.position);
+  hudEl.style.opacity = !live || narrator.busy || journal.isOpen ? 0 : 1;
+  showHint(!live || narrator.busy ? '' : (valdrada.story.hint || ''));
+}
+
+function showHint(hint) {
+  if (hint !== lastHint) { hintEl.innerHTML = hint; hintEl.style.display = hint ? 'block' : 'none'; lastHint = hint; }
+}
+
+function frame(now) {
+  // tra 0 e 0,1 s: se la tab era in pausa non esplodiamo, e dopo un lavoro lungo (la costruzione
+  // di Valdrada) il tempo del frame può risultare indietro: mai un passo negativo
+  const dt = Math.max(0, Math.min((now - last) / 1000, 0.1));
+  last = now;
+
+  if (city === 'ottavia') updateOttavia(dt, now);
+  else updateValdrada(dt);
   dream.update(dt);
+
+  // la città attiva e il suo viaggiatore (che nel sogno e nella nebbia va spostato di scena)
+  const active = city === 'ottavia' ? scene : valdrada.scene;
+  const traveler = city === 'ottavia' ? player.object : valdrada.player.object;
   if (view.mode === 'world') {
-    scene.add(player.object);
-    renderer.render(scene, camera);
+    active.add(traveler);
+    if (city === 'ottavia') renderer.render(scene, camera);
+    else valdrada.render();
   } else if (view.mode === 'dream') {
-    dream.scene.add(player.object);
+    dream.scene.add(traveler);
     renderer.render(dream.scene, camera);
   } else {
-    transition.render(dream.scene, scene, camera, view.t, player.object, now / 1000);
+    const prepare = city === 'valdrada' ? (sc) => { if (sc === valdrada.scene) valdrada.prepare(); } : null;
+    transition.render(dream.scene, active, camera, view.t, traveler, now / 1000, prepare);
   }
   requestAnimationFrame(frame);
 }

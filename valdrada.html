@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Valdrada — Le città invisibili</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+    <!-- interfaccia narrativa -->
+    <link rel="stylesheet" href="./src/ui/style.css" />
+    <!-- Three.js è incluso nel repository (libs/three): l'import map dice al browser
+         dove trovare il modulo 'three', così il progetto gira senza build. -->
+    <script type="importmap">
+      { "imports": { "three": "./libs/three/three.module.js" } }
+    </script>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #0e1116; }
+      canvas { display: block; }
+      #hud {
+        position: fixed; left: 16px; bottom: 16px;
+        font: 13px/1.5 system-ui, sans-serif; color: #cfd6df;
+        background: rgba(0,0,0,.35); padding: 8px 12px; border-radius: 6px;
+        pointer-events: none;
+      }
+      #hud b { color: #fff; }
+      #hint {
+        position: fixed; left: 50%; top: 24px; transform: translateX(-50%);
+        font: 15px/1.5 system-ui, sans-serif; color: #fff; text-align: center;
+        background: rgba(0,0,0,.45); padding: 8px 16px; border-radius: 6px;
+        pointer-events: none; display: none; font-variant-numeric: tabular-nums;
+      }
+      #hint b { color: #ffd98a; }
+    </style>
+  </head>
+  <body>
+    <div id="hud">
+      <b>WASD</b> move · <b>E</b> interact · <b>Mouse</b> (hold) camera · <b>Wheel</b> zoom · <b>R</b> restart
+    </div>
+    <div id="hint"></div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

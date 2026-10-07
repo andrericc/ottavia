@@ -30,6 +30,31 @@ export const TEXTS = {
     ['P', 'Every city I describe to you, Sire, is held together by something. In Ottavia you can see the ropes.'],
     ['K', 'Then tell me another.'],
   ],
+  // dopo Ottavia, ancora nel sogno: Polo racconta la seconda città
+  dreamValdrada: [
+    ['K', 'But not another city hanging over the void. Tonight I am tired of looking down.'],
+    ['P', 'Then look across, Sire. There is a city on the shore of a lake, its houses all verandas, one above the other.'],
+    ['K', 'A lake is only a lake.'],
+    ['P', 'Not this one. Whoever arrives sees two cities: one standing above the water, and one upside down beneath it.'],
+    ['K', 'A reflection. Every city on the water has one.'],
+    ['P', 'Here nothing happens above that the lake does not repeat below. Every gesture is made twice.'],
+    ['K', 'And the traveller? Does the lake repeat him too?'],
+    ['P', 'That, Sire, is what I went there to find out. Its name is Valdrada.'],
+  ],
+  // prima di Valdrada, come per Ottavia, una riga del libro
+  valdradaIntro: [
+    '> «Così il viaggiatore, arrivando, vede due città: una diritta sopra il lago e una riflessa capovolta.»',
+    '— Italo Calvino, Le città invisibili (1972)',
+  ],
+  // dopo Valdrada: la cornice si chiude
+  dreamFinal: [
+    ['K', 'So the lake gave you back to yourself piece by piece, Venetian. And then it kept you.'],
+    ['P', 'It kept someone, Sire. I am still not sure it was me.'],
+    ['K', 'Two cities that look at each other forever and do not love each other. Are you describing Valdrada, or my court?'],
+    ['P', 'Perhaps every city I tell you about is the same city, Sire. Ottavia hangs from what it cannot see. Valdrada lives for what it sees and cannot touch.'],
+    ['K', 'And you? In which of them do you live?'],
+    ['P', 'In the one I am about to describe, Sire. Always the next one.'],
+  ],
   names: { K: 'Kublai Khan', P: 'Marco Polo' },
 
   // il biglietto sul palo, all'arrivo: insegna il gesto senza dirlo come un manuale
@@ -107,4 +132,11 @@ export const TEXTS = {
     '— Italo Calvino, Le città invisibili',
   ],
   toBeContinued: ['*To be continued: the Khan is waiting for the next city.*'],
+  // il cartello che chiude tutto
+  theEnd: [
+    'Ottavia · Valdrada',
+    '*An interactive journey through Italo Calvino\'s Invisible Cities*',
+    'Interactive Graphics — Sapienza Università di Roma',
+    '*Thank you for travelling.*',
+  ],
 };

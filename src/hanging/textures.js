@@ -22,7 +22,7 @@
 import * as THREE from 'three';
 
 // numeri casuali ripetibili (stesso seme → stessa sequenza)
-const rng = (seed) => { let s = seed > 0 ? seed : 1; return () => (s = (s * 16807) % 2147483647) / 2147483647; };
+export const rng = (seed) => { let s = seed > 0 ? seed : 1; return () => (s = (s * 16807) % 2147483647) / 2147483647; };
 
 function makeCanvas(w, h, draw) {
   const c = document.createElement('canvas');
@@ -76,12 +76,14 @@ export function heightToNormal(canvas, strength = 2) {
 const CACHE = new Map();
 function cached(key, make) {
   if (!CACHE.has(key)) CACHE.set(key, make());
-  const base = CACHE.get(key), map = base.clone(), det = base.userData.detail;
+  const base = CACHE.get(key), det = base.userData.detail;
+  // (clone() copierebbe userData passando da JSON — con dentro delle texture sarebbe lentissimo)
+  base.userData = {}; const map = base.clone(); base.userData = { detail: det };
   map.userData = { detail: { normalMap: det.normalMap.clone(), roughnessMap: det.roughnessMap.clone() } };
   return map;
 }
 
-function proceduralTexture(w, h, seed, draw, { normal = 2 } = {}) {
+export function proceduralTexture(w, h, seed, draw, { normal = 2 } = {}) {
   const layer = (L) => makeCanvas(w, h, (g) => draw(g, w, h, L, rng(seed)));
   const map = finish(new THREE.CanvasTexture(layer('color')), true);
   map.userData.detail = {
@@ -92,8 +94,8 @@ function proceduralTexture(w, h, seed, draw, { normal = 2 } = {}) {
 }
 
 // sceglie il valore giusto per il livello che si sta disegnando
-const pick = (L, color, height, rough) => (L === 'color' ? color : L === 'height' ? height : rough);
-const gray = (v) => `rgb(${v | 0},${v | 0},${v | 0})`;
+export const pick = (L, color, height, rough) => (L === 'color' ? color : L === 'height' ? height : rough);
+export const gray = (v) => `rgb(${v | 0},${v | 0},${v | 0})`;
 
 // Monta normalMap e roughnessMap su tutti i materiali che usano una texture
 // procedurale. La ripetizione (repeat/offset) viene copiata dalla texture colore.

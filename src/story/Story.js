@@ -366,8 +366,10 @@ export class Story {
     await wait(1.5); if (!this.alive(tok)) return;
     await this.dissolve(1, 0, 4.5); if (!this.alive(tok)) return;
     await this.dialogue(TEXTS.dreamEnd); if (!this.alive(tok)) return;
-    await this.narrator.card(TEXTS.toBeContinued);
     this.stage = 'done';
+    // la cornice continua: il Khan chiede un'altra città (vedi main.js → Valdrada)
+    if (this.onFinished) this.onFinished();
+    else await this.narrator.card(TEXTS.toBeContinued);
   }
 
   // ---------------------------------------------------------------

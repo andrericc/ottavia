@@ -77,6 +77,11 @@ export class TravelerAnimator {
       if (ctx.onGround && ctx.wind) this.poseWind(ctx.wind);
       if (ctx.action === 'pull') { this.posePull(); rate = 16; }
       else if (ctx.action === 'hold') { this.poseHold(); rate = 10; }
+      else if (ctx.action === 'reach') { this.poseReach(); rate = 8; }     // Valdrada: alza il braccio (accendere una lanterna)
+      else if (ctx.action === 'ring') { this.poseRing(); rate = 10; }      // Valdrada: tiene la corda della campana (le braccia le muove Story.js)
+      else if (ctx.action === 'offer') { this.poseOffer(-1); rate = 4; }   // Valdrada: tende la mano destra
+      else if (ctx.action === 'offerL') { this.poseOffer(1); rate = 4; }   // Valdrada: tende la mano sinistra
+      else if (ctx.action === 'lookup') { this.poseLookUp(); rate = 3; }   // Valdrada: guarda in su
       if (ctx.wobble > 0) this.poseWobble(ctx.wobble);
     } else if (ctx.state === 'hang') this.poseHang(dt, ctx);
     else if (ctx.state === 'climb') { this.poseClimb(ctx.climbT); rate = 20; }
@@ -194,6 +199,33 @@ export class TravelerAnimator {
     this.set('kneeL', 0.2); this.set('kneeR', 0.15); this.set('hipL', -0.1);
   }
 
+  // --- GESTI DI VALDRADA -------------------------------------------------
+  poseReach() {
+    this.set('head', -0.45); this.set('spine', -0.05);
+    this.set('shoulderR', -2.5, 0, -0.15); this.set('elbowR', -0.35);
+    this.set('shoulderL', -0.2, 0, 0.15); this.set('elbowL', -0.3);
+  }
+  // le mani in alto sulla corda; quanto la tirano giù lo decide Story.js (ringArms)
+  poseRing() {
+    this.set('head', -0.35); this.set('spine', -0.04);
+    this.set('kneeL', 0.12); this.set('kneeR', 0.12);
+    this.set('shoulderL', -2.55, 0, -0.18); this.set('elbowL', -0.3);
+    this.set('shoulderR', -2.55, 0, 0.18); this.set('elbowR', -0.3);
+  }
+  // tendere una mano in avanti, un po' in basso, aperta (side: -1 destra, 1 sinistra)
+  poseOffer(side) {
+    const b = 0.02 * Math.sin(this.time * 1.3);
+    const arm = side < 0 ? 'R' : 'L', other = side < 0 ? 'L' : 'R';
+    this.set('spine', 0.06); this.set('head', 0.12);
+    this.set('shoulder' + arm, -1.25 + b, 0, -side * 0.05); this.set('elbow' + arm, -0.12);
+    this.set('wrist' + arm, 0.25);
+    this.set('shoulder' + other, -0.1, 0, side * 0.1); this.set('elbow' + other, -0.2);
+  }
+  poseLookUp() {
+    this.set('head', -0.75); this.set('chest', -0.12);
+    this.set('shoulderL', -0.1, 0, 0.1); this.set('shoulderR', -0.1, 0, -0.1);
+  }
+
   // --- IN ARIA (salto) -----------------------------------------------------
   poseAir(ctx) {
     const rising = ctx.vy > 0;
@@ -284,9 +316,10 @@ export class TravelerAnimator {
 
   // Si gira verso la direzione di marcia per la via più breve
   turn(dt, facing) {
+    if (!Number.isFinite(this.yaw) || Math.abs(this.yaw) > 1e3) this.yaw = facing; // sicurezza
     let d = facing - this.yaw;
     d = Math.atan2(Math.sin(d), Math.cos(d));
-    this.yaw += d * (1 - Math.exp(-12 * dt));
+    this.yaw += d * THREE.MathUtils.clamp(1 - Math.exp(-12 * dt), 0, 1);
     this.t.root.rotation.y = this.yaw;
   }
 

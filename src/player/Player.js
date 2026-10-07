@@ -113,6 +113,7 @@ export class Player {
   updateWalk(dt, move) {
     const p = this.position, v = this.velocity;
     const y0 = p.y; // altezza a inizio frame
+    const x0 = p.x, z0 = p.z;
 
     if (move) {
       v.x = move.x * this.speed;
@@ -132,8 +133,13 @@ export class Player {
     // Il vento spinge di lato: chi cammina viene spostato, chi sta fermo su un'asse resiste
     if (this.windPush && this.onGround) p.x += this.windPush * (move ? 1 : 0.06) * dt;
 
+    // Alcuni mondi (Valdrada) hanno bordi e parapetti: world.constrain riporta indietro
+    // il viaggiatore se sta per uscire dalle superfici calpestabili.
+    if (this.world.constrain) this.world.constrain(p, x0, y0, z0);
+
     // Su cosa poggio? roccia della cresta, traversina, o solo funi (intervallo)
-    const crest = this.world.groundHeightAt(p.x, p.z);
+    // (y0 serve ai mondi a più piani: si sceglie la superficie appena sotto i piedi)
+    const crest = this.world.groundHeightAt(p.x, p.z, y0);
     const netH = crest === null ? this.net.heightAt(p.x, p.z) : null;
     const plank = netH !== null ? this.walkway.plankUnder(p.x, p.z, this.plank) : null;
     const netOk = netH !== null && this.net.cellIntact(p.x, p.z); // sotto c'è rete integra?
@@ -366,7 +372,7 @@ export class Player {
   postPhysics() {
     const p = this.position;
     if (this.state === 'walk' && this.onGround) {
-      if (this.world.groundHeightAt(p.x, p.z) !== null) return;
+      if (this.world.groundHeightAt(p.x, p.z, p.y) !== null) return;
       if (this.plank) {
         // l'asse mi trascina con sé (attrito): seguo il suo spostamento in Z e in X
         const z = this.walkway.plankZ(this.plank), x = this.walkway.plankX(this.plank);
@@ -393,7 +399,7 @@ export class Player {
     if (this.state === 'walk') {
       if (!this.onGround) return;
       x = this.position.x; z = this.position.z;
-      if (this.world.groundHeightAt(x, z) !== null) return; // sono sulla roccia
+      if (this.world.groundHeightAt(x, z, this.position.y) !== null) return; // sono sulla roccia
       const plank = this.plank || this.stridePlank;
       if (plank) {                                           // sono su un'asse (o sto scavalcando)
         this.walkway.applyLoad(plank, x, this.weight + this.impact);

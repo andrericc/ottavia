@@ -302,8 +302,18 @@ la città lo tira dall'altra parte a ritmo.
   solleva dal basso verso l'alto e scopre Ottavia. `view.mode` in `main.js` sceglie cosa disegnare:
   `'dream'`, `'world'` oppure `'blend'` (con `view.t` da 0 a 1). Il viaggiatore viene spostato
   nella scena che si sta disegnando.
-- **Finale**: dopo il cartello su Ottavia si torna nel sogno con la nebbia al contrario, il
-  Khan chiede un'altra città e compare "To be continued".
+- **L'ordine è fisso**: sogno → Ottavia → sogno → Valdrada → sogno → fine. Dopo il cartello su
+  Ottavia si torna nel sogno con la nebbia al contrario e il Khan chiede un'altra città
+  (`story.onFinished`). `main.js` costruisce allora Valdrada (`createValdrada`, solo in quel
+  momento, per non appesantire l'avvio), il sogno si riposa in punta al pontile e Polo la
+  racconta; la nebbia sale e scopre il lago. Finita Valdrada (`valdradaStory.onEnd`) si torna nel
+  sogno un'ultima volta: Kublai e Polo chiudono e compare il cartello finale.
+- **Una sola pagina per tutto**: renderer, camera, camera che segue e narratore sono condivisi tra
+  le due città; ognuna ha la sua scena, il suo viaggiatore e le sue interazioni. `city` in
+  `main.js` dice quale città si aggiorna e si disegna (l'altra resta ferma). La transizione
+  accetta un `prepare(scene)`, che per Valdrada prepara il riflesso del lago prima di disegnare.
+- **Scorciatoie per lavorare**: `?skip` parte accanto alla rete di Ottavia; `?valdrada` (o la
+  pagina `valdrada.html`) salta Ottavia e parte dal sogno prima di Valdrada, fino al sogno finale.
 - **La cabina** è stata ingrandita (2,2 m di altezza interna, 1,5 × 1,9 m) e ha un varco a ogni
   testata. Le stazioni sono state rialzate (`H = 2.9`), così il pavimento della cabina arriva a filo
   della pedana.
@@ -328,3 +338,127 @@ nei canali RGB. Le mappe extra viaggiano attaccate alla texture colore e `applyD
 (chiamata in `main.js`) le monta su tutti i materiali che la usano. Le texture con gli stessi
 parametri si generano una volta sola (cache) e si clonano.
 
+
+## Valdrada, la seconda città
+
+Nell'esperienza completa si arriva a Valdrada dal sogno, dopo Ottavia. Per provarla subito:
+`index.html?valdrada` oppure **`valdrada.html`** (sogno → Valdrada → sogno).
+
+*"Gli antichi costruirono Valdrada sulle rive d'un lago con case tutte verande una sopra
+l'altra e vie alte che affacciano sull'acqua i parapetti a balaustra."*
+
+```
+src/valdrada/
+├── Valdrada.js      la città come modulo: lago, villaggio, viaggiatore, abitanti, storia
+├── City.js          il villaggio in fila lungo la riva: case su palafitte, passerella,
+│                    ponticelli di corda, campanile di legno, pontile, barche, riva e bosco
+├── VillageHouse.js  le case del villaggio (casa storta, torre di verande, casa lunga) e il fumo
+├── lab.js           pagina di prova delle case (valdrada-case.html)
+├── MirrorWater.js   il lago-specchio: riflesso planare scritto da noi
+├── Atmosphere.js    tardo pomeriggio nebbioso: cielo, nebbia, luci, monti a strati, gabbiani
+├── Inhabitants.js   gli abitanti, che esistono solo nel riflesso
+├── Story.js         la storia: l'uomo senza riflesso, i tre gesti e il finale
+└── vtextures.js     tavole, scandole con muschio, paglia, reti, facciate (emissive), acqua, nebbia
+```
+
+- **Il lago-specchio** (`MirrorWater.js`): ogni frame una *camera specchio* (la camera del
+  giocatore riflessa rispetto al piano dell'acqua) disegna la scena in un render target.
+  Un piano di clipping obliquo (tecnica di Lengyel, la stessa del `Reflector` degli esempi
+  di three.js, qui riscritta) taglia ciò che sta sotto l'acqua. Lo shader proietta
+  l'immagine sulla superficie con una *texture matrix*, la deforma con due normal map che
+  scorrono e la mescola al colore dell'acqua con un termine di Fresnel.
+- **Layer**: la città sta sul layer 0; gli **abitanti** sul layer 1, che vede solo la camera
+  specchio (sopra la città è vuota, nell'acqua è abitata); il **viaggiatore** sul layer 2,
+  che la camera specchio non vede: a Valdrada lui non ha riflesso.
+- **Il villaggio** (`City.js`, `VillageHouse.js`): una fila di case di legno su **palafitte**
+  lungo una riva dritta, con il bosco di abeti che sale ripido nella nebbia (nessuna casa sulla
+  collina). Cinque tipi di casa, in varianti diverse e a volte specchiate:
+  la **casa storta** (il piano di sopra sporge su mensole e i due piani pendono in versi opposti,
+  tetto di paglia o di scandole, balconcino con la scala a pioli, casotto addossato), la
+  **torre di verande** (3–5 piani stretti, ognuno con la sua veranda ad angolo e ruotato un poco
+  rispetto a quello sotto — ogni piano è figlio del precedente nel modello gerarchico; carrucola
+  con il secchio, piccionaia) e la **casa lunga** (timpano intagliato verso il lago, portico
+  sull'acqua, abbaino, legna accatastata), la **casa rotonda** (capanna tonda con il tetto conico
+  di paglia e la veranda tutt'intorno) e la **casa a ponte** (il piano di sopra scavalca la
+  passerella: ci si passa sotto). Davanti corre la passerella con il parapetto; tra i
+  piani alti di alcune case passano **ponticelli di corda** (le "vie alte"). Legno grigio, solo
+  porte e persiane di colori stinti; fumo dai camini (sprite che salgono e sbiadiscono).
+  **Dettagli di vita**: nei vicoli piccoli pontili con botti, casse, remi, pesci a seccare,
+  altarini con la lucina; canne da pesca al parapetto; due **trabucchi** (macchine da pesca di
+  pali che sporgono sul lago) con la rete che scende nell'acqua e risale.
+- **Modelli gerarchici nuovi**: la campana sul campanile di legno (giogo → campana → batacchio),
+  le barche (scafo → remo), le lanterne appese (palo → braccio → lanterna, che dondola),
+  i gabbiani (corpo → ali → punte, con battito e planata); gli abitanti riusano il
+  viaggiatore, e alcuni salutano (spalla → gomito ruotati a mano sopra l'animazione).
+- **Texture**: tavole, scandole (anche con il muschio), paglia e assi con map + normal +
+  roughness; la rete da pesca è una texture con trasparenza (alphaTest); la nebbia sul lago è una texture di sola
+  trasparenza; l'acqua usa una normal map animata.
+- **Camminare a più piani**: `Player.js` ora passa la quota dei piedi a
+  `world.groundHeightAt(x, z, y)` (si sceglie la superficie appena sotto) e chiama
+  `world.constrain` per bordi, balaustre e pilastri. Per Ottavia non cambia nulla.
+- **Prestazioni**: le parti ferme della città (più di mille oggetti) vengono fuse in una
+  geometria per materiale (`mergeStatic`), perché la scena si disegna due volte a frame.
+
+### La storia: l'uomo senza riflesso (`Story.js`)
+
+Il viaggiatore arriva in punta al pontile e scopre di non avere riflesso. Nell'acqua il
+villaggio è abitato e ognuno compie un gesto; quando il viaggiatore compie lo stesso gesto
+sopra, nell'acqua ritrova un pezzo di sé. All'arrivo il villaggio è quasi buio, sopra e sotto:
+poche finestre accese e le lanterne del parapetto spente.
+
+1. **La lanterna** sotto il portico della casa lunga: nel riflesso un uomo la accende di
+   continuo. Il viaggiatore la accende davvero (`E`): sopra si accende solo quella lanterna,
+   nel lago si accendono **tutte le finestre e le lanterne**. Nell'acqua compaiono i suoi **piedi**.
+2. **La campana** sulla piattaforma accanto al pontile (ci si arriva da una passerella di
+   tavole). Appena accesa la lanterna, nel lago la donna sotto il campanile comincia a
+   suonarla: la campana del riflesso oscilla, ma non si sente niente. Il viaggiatore va sotto
+   la campana e tira la corda (`E`): la campana vera oscilla e suona (WebAudio), quella del
+   lago si ferma e tace. Nell'acqua compare **metà** del suo corpo.
+3. **La mano** in punta al pontile: oltre la punta, nell'acqua, una figura tende una mano.
+   Il viaggiatore tende la sua: il riflesso, ancora senza testa, smette di copiarlo, va da lei
+   e le prende la mano. Solo dopo la stretta gli compare la testa: è intero. Allora il
+   viaggiatore sopra **svanisce** (diventa trasparente mentre piccole luci si staccano e
+   salgono) e resta solo il riflesso, che alza gli occhi verso il pontile vuoto.
+   *"Le due Valdrade vivono l'una per l'altra, guardandosi negli occhi di continuo, ma non
+   si amano."* Poi la nebbia, e nel sogno Marco è di nuovo davanti a Kublai.
+
+Le tecniche:
+
+- **Il riflesso che compare a pezzi**: è un secondo `Traveler` sul layer 1 (lo vede solo la
+  camera specchio) che ogni frame copia posizione e articolazioni del viaggiatore. Non sta
+  sotto i suoi piedi (le assi lo nasconderebbero) ma accanto, sull'acqua libera. I suoi
+  materiali hanno un **piano di clipping** (`renderer.localClippingEnabled`) che sale
+  dolcemente: piedi → metà → intero.
+- **Luci accese solo nel lago**: `MirrorWater` ha due ganci, `onBefore` e `onAfter`,
+  chiamati intorno al disegno del riflesso. All'inizio vetri, finestre "accendibili" e
+  lanterne sono spenti (restano accese solo poche finestre con un materiale a parte); dopo la
+  lanterna, durante il disegno del riflesso, i loro materiali diventano emissivi e le luci
+  delle lanterne si accendono, e subito dopo tornano spenti. La stessa città è buia sopra e
+  accesa nell'acqua.
+- **Due oggetti nello stesso punto**: la lanterna spenta (layer 2, solo il giocatore) e quella
+  accesa (layer 1, solo il lago); la campana vera con la sua corda (layer 2) e una copia
+  `clone(true)` (layer 1), ognuna con il suo suonatore.
+- **La campana a leva e la corda nelle mani**: la corda pende dalla punta di una leva del
+  giogo. Chi suona segue un ciclo di trazione (braccia in alto → mani al petto, con una
+  leggera piegata delle ginocchia), impostato sulle articolazioni dopo l'animazione normale.
+  La corda viene disegnata ogni frame come un cilindro stirato **dalla punta della leva al
+  punto tra i due pugni** (con un capo che pende sotto le mani): le mani la toccano sempre.
+  Il giogo ruota di quanto la corda è scesa; il battaglio suona a ogni fine corsa. Quando la
+  corda viene lasciata (sempre con le mani in alto) pende dritta e la campana si calma piano.
+- **Il viaggiatore che svanisce**: i suoi materiali vengono clonati e resi trasparenti, e
+  l'opacità scende a zero mentre una quarantina di sprite luminosi (additivi, solo sul layer
+  del giocatore) salgono e si spengono; alla fine l'oggetto viene nascosto. `restoreTraveler`
+  lo rimette com'era prima di tornare nel sogno.
+- **Il suono della campana** è sintetizzato con WebAudio: somma di parziali non armoniche
+  (0,5 · 1 · 1,19 · 1,56 · 2 · 2,74 · 3,76 volte la fondamentale) che si spengono a velocità
+  diverse.
+- **Nuovi gesti del viaggiatore** (`TravelerAnimator.js`): `reach` (alza il braccio),
+  `ring` (base per suonare la campana), `offer` / `offerL` (tende la mano destra / sinistra),
+  `lookup` (alza la testa).
+- **Un passo di tempo mai negativo**: dopo un lavoro lungo (la costruzione di Valdrada) il
+  primo frame poteva avere un `dt` negativo, che faceva impazzire l'orientamento del
+  viaggiatore; ora `dt` è limitato tra 0 e 0,1 s e la rotazione del modello ha un controllo
+  di sicurezza.
+- **Regia**: dopo ogni gesto la camera va a guardare il riflesso dall'alto, perché dietro di
+  lui ci sia il cielo chiaro e non il villaggio scuro; nel finale esce sull'acqua, di lato
+  alla punta del pontile, da dove si vedono insieme il viaggiatore e le due mani che si incontrano sotto.

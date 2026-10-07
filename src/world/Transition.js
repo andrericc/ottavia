@@ -56,11 +56,14 @@ export class Transition {
     });
   }
 
-  render(sceneA, sceneB, camera, t, shared = null, time = 0) {
+  // prepare(scene): facoltativa, chiamata prima di disegnare la scena visibile
+  // (a Valdrada serve a preparare il riflesso del lago)
+  render(sceneA, sceneB, camera, t, shared = null, time = 0, prepare = null) {
     const r = this.renderer;
-    // dietro la nebbia serve una sola scena: il sogno nella prima metà, Ottavia nella seconda
+    // dietro la nebbia serve una sola scena: il sogno nella prima metà, la città nella seconda
     const sc = t < 0.5 ? sceneA : sceneB, rt = t < 0.5 ? this.rtA : this.rtB;
     if (shared) sc.add(shared);
+    if (prepare) prepare(sc);
     r.setRenderTarget(rt); r.render(sc, camera);
     r.setRenderTarget(null);
     this.material.uniforms.t.value = t;
